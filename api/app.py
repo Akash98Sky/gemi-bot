@@ -31,6 +31,7 @@ async def ping(secs: int = 20):
 async def actions(req: Request):
     body = await req.json()
     if(body['event']['id'] == 'wakeup'):
+        await sleep(20)
         async with ClientSession(conn_timeout=20) as session:
-            async with session.get(req.base_url.scheme + '://' + getenv('DETA_SPACE_APP_HOSTNAME') + '/keepawake?secs=55') as res:
+            async with session.get(req.base_url.scheme + '://' + getenv('DETA_SPACE_APP_HOSTNAME') + '/keepawake?secs=18') as res:
                 return await res.text()
