@@ -4,6 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.utils.markdown import hbold
 from asyncio.futures import Future
 
@@ -41,7 +42,11 @@ async def echo_handler(message: Message, state: FSMContext, chat: ChatService) -
         response = ''
         async for reply in chat.gen_response_stream(message.text):
             response = response + reply
-            sent = await sent.edit_text(text=response)
+            try:
+                sent = await sent.edit_text(text=response)
+            except TelegramBadRequest:
+                # Ignore intermediate errors
+                pass
     except Exception as e:
         # But not all the types is supported to be copied so need to handle it
         if sent != None:
