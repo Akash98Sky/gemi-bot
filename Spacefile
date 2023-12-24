@@ -13,13 +13,12 @@ micros:
           description: Telegram bot token
         - name: GOOGLE_API_KEY
           description: Google API key for using gemini
-
-  - name: api
-    src: ./
-    engine: python3.9
-    run: uvicorn main:api --host 0.0.0.0 --port $PORT
-    dev: uvicorn main:api --host 0.0.0.0 --port $PORT
-    presets:
-      env:
-        - name: GOOGLE_API_KEY
-          description: Google API key for using gemini
+    actions:
+      - id: "wakeup"
+        name: "Wake Up"
+        description: "Wake up micro"
+        trigger: "schedule"
+        default_interval: "*/1 * * * *"
+    public_routes:
+      - "/ping"
+      - "/keepawake"
