@@ -1,0 +1,5 @@
+aiogram==3.2.0
+dependency-injector==4.41.0
+fastapi==0.105.0
+google-generativeai==0.3.2
+uvicorn==0.25.0
