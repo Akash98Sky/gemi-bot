@@ -5,20 +5,17 @@ micros:
     src: ./
     engine: python3.9
     primary: true
-    run: python3 -m main
-    dev: python3 -m main
+    run: gunicorn main:web_app --bind 0.0.0.0:$PORT -k aiohttp.GunicornWebWorker
+    dev: gunicorn main:web_app --bind localhost:8080 -k aiohttp.GunicornWebWorker --reload
     presets:
       env:
         - name: BOT_TOKEN
           description: Telegram bot token
         - name: GOOGLE_API_KEY
           description: Google API key for using gemini
-    actions:
-      - id: "wakeup"
-        name: "Wake Up"
-        description: "Wake up micro"
-        trigger: "schedule"
-        default_interval: "* * * * *"
+        - name: WEBHOOK_SECRET
+          description: Telegram bot Webhook secret (Optional)
+          default: ZKJ7cQAdjN6skpRFerVaHx4gYSmhDubz
     public_routes:
       - "/ping"
-      - "/keepawake"
+      - "/tg_webhook"

@@ -1,51 +1,64 @@
-import asyncio
 import logging
-import sys
 from os import getenv
 from os.path import exists
-import uvicorn
+import sys
+from aiohttp.web import Application, run_app
 
 from containers import BotContainer, Configs
-from api.app import app
+from api.routes import routes
 
-api_reload = False
+# if exists(".env"):
+#     from dotenv import load_dotenv
+#     # Load .env file if it exists
+#     load_dotenv(".env")
+#     api_reload = True
+#     logging.info("Loaded local .env file")
 
-if exists(".env"):
-    from dotenv import load_dotenv
-    # Load .env file if it exists
-    load_dotenv(".env")
-    api_reload = True
-    logging.info("Loaded local .env file")
+# Path to webhook route, on which Telegram will send requests
+# Also set this as a public path as Telegram servers will request it
+WEBHOOK_PATH = "/tg_webhook"
 
-@app.on_event("startup")
-async def on_server_startup():
-    configs = Configs
-
-    # API key can be obtained via https://platform.openai.com/account/api-keys
-    configs.chat_config.api_key.from_env("GOOGLE_API_KEY", required=True)
-
-async def run_server():
-    config = uvicorn.Config(app=app, host="0.0.0.0", port=int(getenv("PORT", 8000)), reload=api_reload)
-    server = uvicorn.Server(config)
-    await server.serve()
-
-async def main():
-    logging.info("Starting API...")
-    asyncio.create_task(run_server())
-
+async def on_startup(app: Application):
     logging.info("Starting bot...")
-    # Initialize Bot instance with a default parse mode which will be passed to all API calls
-    bot = BotContainer.tg_bot()
-    # And the run events dispatching
-    await bot.start_polling()
+    # If you have a self-signed SSL certificate, then you will need to send a public
+    # certificate to Telegram
+    await BotContainer.tg_bot().set_webhook()
 
-if __name__ == "__main__":
+async def on_shutdown(app: Application):
+    logging.info("Shutting down bot...")
+
+def init_bot(app: Application):
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    
     configs = Configs
     # Bot token can be obtained via https://t.me/BotFather
     configs.bot_config.token.from_env("BOT_TOKEN", required=True)
+    # Base URL for webhook will be used to generate webhook URL for Telegram
+    configs.bot_config.webhook_host.from_env("DETA_SPACE_APP_HOSTNAME", required=True)
+    # Secret key to validate requests from Telegram (optional)
+    configs.bot_config.webhook_secret.from_env("WEBHOOK_SECRET", default='')
 
     # API key can be obtained via https://platform.openai.com/account/api-keys
     configs.chat_config.api_key.from_env("GOOGLE_API_KEY", required=True)
 
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-    asyncio.run(main())
+    # Initialize Bot instance with a default parse mode which will be passed to all API calls
+    bot = BotContainer.tg_bot()
+
+    # Register webhook handler on application
+    bot.register_webhook_handler(app, WEBHOOK_PATH)
+
+
+async def web_app():
+    app = Application()
+
+    init_bot(app)
+    app.on_startup.append(on_startup)
+    app.on_shutdown.append(on_shutdown)
+
+    app.router.add_routes(routes)
+
+    return app
+
+
+if __name__ == "__main__":
+    run_app(web_app(), port=8080, host="0.0.0.0")

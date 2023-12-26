@@ -1,4 +1,3 @@
-import asyncio
 import textwrap
 from typing import Iterable, Union
 from concurrent.futures import ThreadPoolExecutor
