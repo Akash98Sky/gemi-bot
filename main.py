@@ -2,6 +2,7 @@ import asyncio
 import logging
 import sys
 from aiohttp.web import Application, run_app
+from bot.bot import TgBot
 
 from containers import BotContainer, Configs
 from api.routes import routes
@@ -17,19 +18,22 @@ from api.routes import routes
 # Also set this as a public path as Telegram servers will request it
 WEBHOOK_PATH = "/tg_webhook"
 
+async def start_bot(bot: TgBot):
+    await bot.delete_webhook()
+
+    return await bot.start_polling()
+
 async def on_startup(app: Application):
     logging.info("Starting bot...")
+    
     bot = BotContainer.tg_bot()
-
-    await bot.delete_webhook()
-    # If you have a self-signed SSL certificate, then you will need to send a public
-    # certificate to Telegram
-    asyncio.create_task(bot.start_polling())
+    # Delete webhook and start polling
+    asyncio.create_task(start_bot(bot))
 
 async def on_shutdown(app: Application):
     logging.info("Shutting down bot...")
+    
     bot = BotContainer.tg_bot()
-
     # stop polling
     await bot.stop_polling()
     # set webhook on app shutdown
