@@ -1,4 +1,5 @@
 from asyncio import sleep
+import logging
 from typing import Any, Dict
 from aiogram import Router, Bot
 from aiogram.fsm.context import FSMContext
@@ -38,19 +39,29 @@ async def echo_handler(message: Message, state: FSMContext, chat: ChatService) -
     """
     sent: Message | None = None
     try:
-        # Send a reply to the received message
-        sent = await message.reply('Thinking...')
-        response = ''
-        async for reply in chat.gen_response_stream(message.text):
-            response = response + reply
-            try:
-                sent = await sent.edit_text(text=response)
-            except TelegramBadRequest:
-                # Ignore intermediate errors
-                pass
-    except Exception as e:
-        # But not all the types is supported to be copied so need to handle it
-        if sent != None:
-            await sent.edit_text(text=f'Oops! Failed...\n\n{type(e).__name__}: {e}', parse_mode=ParseMode.HTML)
-        else:
-            await message.reply(f'Oops! Failed...\n\n{type(e).__name__}: {e}', parse_mode=ParseMode.HTML)
+        try:
+            # Send a reply to the received message
+            sent = await message.reply('Thinking...')
+            message.reply_to_message
+            response = ''
+            async for reply in chat.gen_response_stream(message.text):
+                response = response + reply
+                try:
+                    sent = await sent.edit_text(text=response)
+                except TelegramBadRequest as e:
+                    # Ignore intermediate errors
+                    if e.message.find('not found') != -1:
+                        # The message was deleted
+                        break
+                    else:
+                        pass
+        except Exception as e:
+            # But not all the types is supported to be copied so need to handle it
+            if sent != None:
+                await sent.edit_text(text=f'Oops! Failed...\n\n{type(e).__name__}: {e}', parse_mode=ParseMode.HTML)
+            else:
+                await message.reply(f'Oops! Failed...\n\n{type(e).__name__}: {e}', parse_mode=ParseMode.HTML)
+    except TelegramBadRequest as e:
+        # Ignore intermediate errors
+        logging.warn(f'Failed to send message: {message.text}, TelegramBadRequest: {e}')
+        pass
