@@ -20,7 +20,6 @@ WEBHOOK_PATH = "/tg_webhook"
 
 async def start_bot(bot: TgBot):
     await bot.delete_webhook()
-
     return await bot.start_polling()
 
 async def on_startup(app: Application):
@@ -39,8 +38,6 @@ async def on_shutdown(app: Application):
     # set webhook on app shutdown
     bot.webhook_path = WEBHOOK_PATH
     await bot.set_webhook()
-    
-    await asyncio.gather(*asyncio.all_tasks() - {asyncio.current_task()})
 
 def init_bot(app: Application):
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
@@ -55,9 +52,6 @@ def init_bot(app: Application):
 
     # API key can be obtained via https://platform.openai.com/account/api-keys
     configs.chat_config.api_key.from_env("GOOGLE_API_KEY", required=True)
-
-    # Register webhook handler on application
-    # BotContainer.tg_bot().register_webhook_handler(app, WEBHOOK_PATH)
 
 
 async def web_app():

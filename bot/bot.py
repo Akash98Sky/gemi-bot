@@ -25,7 +25,7 @@ class TgBot(object):
         self.secret = webhook_secret
 
     def start_polling(self):
-        return self.dispatcher.start_polling(self.bot, chat=self.service)
+        return self.dispatcher.start_polling(self.bot, chat=self.service, handle_signals=False)
     
     def register_webhook_handler(self, app: Application, path: str):
         # Create an instance of request handler,
@@ -59,3 +59,6 @@ class TgBot(object):
     
     def stop_polling(self):
         return self.dispatcher.stop_polling()
+    
+    def close(self):
+        return self.bot.close()
