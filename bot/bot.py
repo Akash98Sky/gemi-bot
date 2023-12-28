@@ -36,8 +36,6 @@ class TgBot(object):
             bot=self.bot,
             secret_token=self.secret,
             chat=self.service,
-            # Wait for the reply to be sent to the user
-            handle_in_background=False,
         )
         # Register webhook handler on application
         webhook_requests_handler.register(app, path=path)
@@ -53,11 +51,11 @@ class TgBot(object):
             await self.bot.delete_webhook()
             # Drop pending updates so that it does not keep retrying
             # No need to wait longer than 20 secsonds
-            return await self.bot.set_webhook(url=webhook_url, secret_token=self.secret, request_timeout=20, drop_pending_updates=True)
+            return await self.bot.set_webhook(url=webhook_url, secret_token=self.secret)
         return True
 
     def delete_webhook(self):
-        return self.bot.delete_webhook()
+        return self.bot.delete_webhook(drop_pending_updates=True)
     
     def stop_polling(self):
         return self.dispatcher.stop_polling()

@@ -1,6 +1,4 @@
 import logging
-from os import getenv
-from os.path import exists
 import sys
 from aiohttp.web import Application, run_app
 
