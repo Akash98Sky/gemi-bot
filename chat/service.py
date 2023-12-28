@@ -37,3 +37,10 @@ class ChatService(object):
     
         async for response in responses:
             yield response.text
+
+    async def gen_chat_response_stream(self, prompts: Union[Iterable[content_types.PartType], str], history: Iterable[content_types.StrictContentType] = None):
+        chat = self.model.start_chat(history=history)
+        responses = await chat.send_message_async(prompts, stream=True)
+
+        async for response in responses:
+            yield response.text

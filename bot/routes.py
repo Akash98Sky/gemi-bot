@@ -8,13 +8,14 @@ from aiogram.types import Message
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.utils.markdown import hbold
-from asyncio.futures import Future
 
-from bot.middlewares import PhotoDownloadMiddleware
+from bot.middlewares import ChatHistoryMiddleware, PhotoDownloadMiddleware
 from chat.service import ChatService
 
 # All handlers should be attached to the Router (or Dispatcher)
 router = Router(name='/')
+
+router.message.middleware(ChatHistoryMiddleware())
 # router.message.middleware(PhotoDownloadMiddleware())
 
 @router.message(CommandStart())
