@@ -21,6 +21,7 @@ async def on_startup(app: Application):
     logging.info("Starting bot...")
     bot = BotContainer.tg_bot()
 
+    await bot.delete_webhook()
     # If you have a self-signed SSL certificate, then you will need to send a public
     # certificate to Telegram
     asyncio.create_task(bot.start_polling())
@@ -29,9 +30,13 @@ async def on_shutdown(app: Application):
     logging.info("Shutting down bot...")
     bot = BotContainer.tg_bot()
 
+    # stop polling
+    await bot.stop_polling()
     # set webhook on app shutdown
     bot.webhook_path = WEBHOOK_PATH
     await bot.set_webhook()
+    
+    await asyncio.gather(*asyncio.all_tasks() - {asyncio.current_task()})
 
 def init_bot(app: Application):
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
