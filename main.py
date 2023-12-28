@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import sys
 from aiohttp.web import Application, run_app
@@ -18,12 +19,19 @@ WEBHOOK_PATH = "/tg_webhook"
 
 async def on_startup(app: Application):
     logging.info("Starting bot...")
+    bot = BotContainer.tg_bot()
+
     # If you have a self-signed SSL certificate, then you will need to send a public
     # certificate to Telegram
-    await BotContainer.tg_bot().set_webhook()
+    asyncio.create_task(bot.start_polling())
 
 async def on_shutdown(app: Application):
     logging.info("Shutting down bot...")
+    bot = BotContainer.tg_bot()
+
+    # set webhook on app shutdown
+    bot.webhook_path = WEBHOOK_PATH
+    await bot.set_webhook()
 
 def init_bot(app: Application):
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
@@ -39,11 +47,8 @@ def init_bot(app: Application):
     # API key can be obtained via https://platform.openai.com/account/api-keys
     configs.chat_config.api_key.from_env("GOOGLE_API_KEY", required=True)
 
-    # Initialize Bot instance with a default parse mode which will be passed to all API calls
-    bot = BotContainer.tg_bot()
-
     # Register webhook handler on application
-    bot.register_webhook_handler(app, WEBHOOK_PATH)
+    # BotContainer.tg_bot().register_webhook_handler(app, WEBHOOK_PATH)
 
 
 async def web_app():

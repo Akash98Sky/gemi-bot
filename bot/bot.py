@@ -45,17 +45,17 @@ class TgBot(object):
 
         self.webhook_path = path
 
-    async def set_webhook(self):
+    async def set_webhook(self, drop_pending_updates = False):
         webhook_url = f'https://{self.webhook_host}{self.webhook_path}'
-        if (await self.bot.get_webhook_info()).url != webhook_url:
-            await self.bot.delete_webhook()
+        webhook_info = await self.bot.get_webhook_info()
+        if webhook_info.url != webhook_url or drop_pending_updates:
             # Drop pending updates so that it does not keep retrying
             # No need to wait longer than 20 secsonds
-            return await self.bot.set_webhook(url=webhook_url, secret_token=self.secret)
+            return await self.bot.set_webhook(url=webhook_url, secret_token=self.secret, drop_pending_updates=drop_pending_updates)
         return True
 
-    def delete_webhook(self):
-        return self.bot.delete_webhook(drop_pending_updates=True)
+    def delete_webhook(self, drop_pending_updates = False):
+        return self.bot.delete_webhook(drop_pending_updates=drop_pending_updates)
     
     def stop_polling(self):
         return self.dispatcher.stop_polling()
