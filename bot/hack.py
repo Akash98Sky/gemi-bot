@@ -3,10 +3,10 @@ import logging
 from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware
 from aiogram.types import Message
-from aio_timers import Timer
 from os import getenv
 
 from bot.enums import BotEventMethods
+from utils.aiotimer import Timer
 
 MSG_HANDLING_CONCURRENCY = int(getenv('MSG_HANDLING_CONCURRENCY', '20'))
 INACTIVITY_SLEEP_DELAY = int(getenv('INACTIVITY_SLEEP_DELAY', '60'))
@@ -38,7 +38,7 @@ class HackyMiddleware(BaseMiddleware):
             try:
                 async with self.timer_create_sem:
                     # timer is scheduled here
-                    self.timer = Timer(delay, HackyMiddleware.goto_sleep, callback_args=[self])
+                    self.timer = Timer(delay, callback=HackyMiddleware.goto_sleep, callback_args=[self])
 
                 # wait until the callback has been executed
                 await self.timer.wait()
