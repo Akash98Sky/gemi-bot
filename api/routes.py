@@ -1,5 +1,3 @@
-from asyncio import sleep
-from json import JSONDecoder
 from typing import Any, Dict
 from aiohttp.web import RouteTableDef, Request, json_response
 
@@ -26,11 +24,5 @@ async def set_webhook(_: Request):
 
 @routes.get("/reset_webhook")
 async def reset_webhook(_: Request):
-    res = await BotContainer.tg_bot().delete_webhook()
-    return json_response({"success": res})
-
-@routes.post("/tg_webhook")
-async def tg_webhook(request: Request):
-    # delete the webhook on successful app launch
     res = await BotContainer.tg_bot().delete_webhook()
     return json_response({"success": res})
