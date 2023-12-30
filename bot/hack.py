@@ -2,7 +2,9 @@ import asyncio
 import logging
 from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware
+from aiogram.dispatcher.event.bases import CancelHandler
 from aiogram.types import Message
+from aiohttp.web import Response
 from os import getenv
 
 from bot.enums import BotEventMethods
@@ -25,7 +27,6 @@ class HackyMiddleware(BaseMiddleware):
     def __init__(self, tg_bot: Any):
         super(HackyMiddleware, self).__init__()
         self.bot = tg_bot
-        asyncio.create_task(self.create_sleep_timer(INACTIVITY_SLEEP_DELAY))
         
         logging.info('Inactivity sleep timer set to %d seconds', INACTIVITY_SLEEP_DELAY)
         logging.info('Message handling concurrency set to %d', MSG_HANDLING_CONCURRENCY)
@@ -33,7 +34,7 @@ class HackyMiddleware(BaseMiddleware):
     def __awake(self) -> bool:
         return self.bot.method == BotEventMethods.polling
 
-    async def create_sleep_timer(self, delay: int):
+    async def create_sleep_timer(self, delay: int = INACTIVITY_SLEEP_DELAY):
         while True:
             try:
                 async with self.timer_create_sem:
@@ -47,13 +48,14 @@ class HackyMiddleware(BaseMiddleware):
                 logging.debug('Bot timer cancelled')
                 pass
 
+            if not self.__awake():
+                break
+
     async def goto_sleep(self):
         async with self.bot_sleep_sem:
             if self.__awake():
-                self.awake = False
                 logging.info('Bot going to sleep...')
-                if self.bot.method == BotEventMethods.polling:
-                    await self.bot.stop_polling()
+                await self.bot.stop_polling()
                 await self.bot.set_webhook()
 
     async def wake_up(self):
@@ -62,7 +64,18 @@ class HackyMiddleware(BaseMiddleware):
                 logging.info('Bot waking up...')
                 await self.bot.delete_webhook()
                 asyncio.create_task(self.bot.start_polling())
-                self.awake = True
+                asyncio.create_task(self.create_sleep_timer())
+
+    async def startup(self):
+        if not self.__awake():
+            logging.debug('HackyMiddleware starting...')
+            await self.wake_up()
+
+    async def shutdown(self):
+        if self.__awake():
+            logging.debug('HackyMiddleware closing...')
+            await self.goto_sleep()
+            self.timer.cancel()
 
     async def __call__(
         self,
@@ -78,7 +91,8 @@ class HackyMiddleware(BaseMiddleware):
 
             async with self.bot_activity_sem:
                 if not self.__awake():
-                    return asyncio.create_task(self.wake_up())
+                    asyncio.create_task(self.wake_up())
+                    return Response(status=400, text='Bot is asleep')
                 else:
                     return await handler(event, data)
         finally:

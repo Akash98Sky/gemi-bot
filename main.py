@@ -16,27 +16,27 @@ def debugger_is_active() -> bool:
     """Return if the debugger is currently active"""
     return hasattr(sys, 'gettrace') and sys.gettrace() is not None
 
-async def start_bot(bot: TgBot):
-    logging.info("Starting up bot...")
-    await bot.delete_webhook()
-    asyncio.create_task(bot.start_polling())
+# async def start_bot(bot: TgBot):
+#     logging.info("Starting up bot...")
+#     await bot.delete_webhook()
+#     asyncio.create_task(bot.start_polling())
 
-async def on_startup(_):
-    bot = BotContainer.tg_bot()
+# async def on_startup(_):
+#     bot = BotContainer.tg_bot()
     
-    if bot.method != BotEventMethods.polling:
-        await start_bot(bot)
+#     if bot.method != BotEventMethods.polling:
+#         await start_bot(bot)
 
-async def on_shutdown(_):
-    logging.info("Shutting down bot...")
+# async def on_shutdown(_):
+#     logging.info("Shutting down bot...")
     
-    bot = BotContainer.tg_bot()
-    # stop polling
-    if bot.method == BotEventMethods.polling:
-        await bot.stop_polling()
-    # set webhook on app shutdown
-    bot.webhook_path = WEBHOOK_PATH
-    await bot.set_webhook()
+#     bot = BotContainer.tg_bot()
+#     # stop polling
+#     if bot.method == BotEventMethods.polling:
+#         await bot.stop_polling()
+#     # set webhook on app shutdown
+#     bot.webhook_path = WEBHOOK_PATH
+#     await bot.set_webhook()
 
 def init_bot(app: Application):
     logging.basicConfig(level=logging.DEBUG if debugger_is_active() else logging.INFO, stream=sys.stdout)
@@ -58,9 +58,6 @@ async def web_app():
     app = Application()
 
     init_bot(app)
-    app.on_startup.append(on_startup)
-    app.on_shutdown.append(on_shutdown)
-
     app.router.add_routes(routes)
 
     return app

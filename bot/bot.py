@@ -1,3 +1,4 @@
+import logging
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
@@ -19,15 +20,21 @@ class TgBot(object):
 
     routers = [ router ]
 
+    def __something_hacky__(self):
+        hacky = HackyMiddleware(self)
+        self.dispatcher.message.middleware.register(hacky)
+        self.dispatcher.startup.register(hacky.startup)
+        self.dispatcher.shutdown.register(hacky.shutdown)
+
     def __init__(self, token: str, service: ChatService, webhook_host: str, parse_mode: ParseMode = ParseMode.MARKDOWN, webhook_secret: str = ''):
         self.bot = Bot(token, parse_mode=parse_mode)
         self.dispatcher = Dispatcher()
-        self.dispatcher.message.middleware.register(HackyMiddleware(self))
         self.dispatcher.include_routers(*self.routers)
         self.service = service
         self.webhook_host = webhook_host
         self.secret = webhook_secret
         self.method = BotEventMethods.unknown
+        self.__something_hacky__()
 
     def start_polling(self):
         self.method = BotEventMethods.polling
@@ -41,7 +48,8 @@ class TgBot(object):
             dispatcher=self.dispatcher,
             bot=self.bot,
             secret_token=self.secret,
-            chat=self.service
+            chat=self.service,
+            handle_in_background=False
         )
         # Register webhook handler on application
         webhook_requests_handler.register(app, path=path)
@@ -53,6 +61,7 @@ class TgBot(object):
 
     async def set_webhook(self, drop_pending_updates = False):
         webhook_url = f'https://{self.webhook_host}{self.webhook_path}'
+        logging.debug(f'Bot webhook set to {webhook_url}...')
         webhook_info = await self.bot.get_webhook_info()
         self.method = BotEventMethods.webhook
 
@@ -63,6 +72,7 @@ class TgBot(object):
         return True
 
     def delete_webhook(self, drop_pending_updates = False):
+        logging.debug('Bot webhook deleted...')
         self.method = BotEventMethods.unknown
         return self.bot.delete_webhook(drop_pending_updates=drop_pending_updates)
     
