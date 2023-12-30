@@ -15,7 +15,10 @@ class PromptGenMiddleware(BaseMiddleware):
         
         if (msg.text and len(msg.text) > 0):
             prompts.append(msg.text)
-        if (msg.photo and len(msg.photo) > 0):
+        elif (msg.photo and len(msg.photo) > 0):
+            if (msg.caption and len(msg.caption) > 0):
+                prompts.append(msg.caption)
+            
             limit_size = [p for p in msg.photo if p.file_size <= 200000] # limit to 200kb
             limit_size.sort(key=lambda ps: ps.file_size)
             photo_id = limit_size[-1].file_id
