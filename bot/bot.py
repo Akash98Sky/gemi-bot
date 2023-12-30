@@ -7,12 +7,12 @@ from aiohttp.web import Application
 from bot.routes import router
 from bot.hack import HackyMiddleware
 from bot.enums import BotEventMethods
-from chat.service import ChatService
+from chat.repository import ChatRepo
 
 class TgBot(object):
     bot: Bot
     dispatcher: Dispatcher
-    service: ChatService
+    chat_repo: ChatRepo
     webhook_host: str
     webhook_path: str
     secret: str
@@ -26,11 +26,11 @@ class TgBot(object):
         self.dispatcher.startup.register(hacky.startup)
         self.dispatcher.shutdown.register(hacky.shutdown)
 
-    def __init__(self, token: str, service: ChatService, webhook_host: str, parse_mode: ParseMode = ParseMode.MARKDOWN, webhook_secret: str = ''):
+    def __init__(self, token: str, chat_repo: ChatRepo, webhook_host: str, parse_mode: ParseMode = ParseMode.MARKDOWN, webhook_secret: str = ''):
         self.bot = Bot(token, parse_mode=parse_mode)
         self.dispatcher = Dispatcher()
         self.dispatcher.include_routers(*self.routers)
-        self.service = service
+        self.chat_repo = chat_repo
         self.webhook_host = webhook_host
         self.secret = webhook_secret
         self.method = BotEventMethods.unknown
@@ -38,7 +38,7 @@ class TgBot(object):
 
     def start_polling(self):
         self.method = BotEventMethods.polling
-        return self.dispatcher.start_polling(self.bot, handle_signals=False, chat=self.service)
+        return self.dispatcher.start_polling(self.bot, handle_signals=False, repo=self.chat_repo)
     
     def register_webhook_handler(self, app: Application, path: str):
         # Create an instance of request handler,
@@ -48,7 +48,7 @@ class TgBot(object):
             dispatcher=self.dispatcher,
             bot=self.bot,
             secret_token=self.secret,
-            chat=self.service,
+            repo=self.chat_repo,
             handle_in_background=False
         )
         # Register webhook handler on application

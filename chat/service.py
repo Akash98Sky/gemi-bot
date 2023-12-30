@@ -1,8 +1,7 @@
 import textwrap
 from typing import Iterable, Union
-from concurrent.futures import ThreadPoolExecutor
 import google.generativeai as genai
-from google.generativeai.generative_models import content_types
+from google.generativeai.generative_models import content_types, ChatSession
 
 class ChatService(object):
     model: genai.GenerativeModel
@@ -38,8 +37,13 @@ class ChatService(object):
         async for response in responses:
             yield response.text
 
-    async def gen_chat_response_stream(self, prompts: Union[Iterable[content_types.PartType], str], history: Iterable[content_types.StrictContentType] = None):
-        chat = self.model.start_chat(history=history)
+    def create_chat_session(self, history: Iterable[content_types.StrictContentType] = []):
+        if next((prompt for prompt in history if isinstance(prompt, (content_types.BlobType))), None) != None:
+            return self.vision_model.start_chat(history=history)
+        else:
+            return self.model.start_chat(history=history)
+
+    async def gen_chat_response_stream(self, chat: ChatSession, prompts: Union[Iterable[content_types.PartType], str]):
         responses = await chat.send_message_async(prompts, stream=True)
 
         async for response in responses:
