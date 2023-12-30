@@ -4,7 +4,7 @@ from aiogram.enums import ParseMode
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp.web import Application
 
-from bot.routes import router
+from bot.routes import routers
 from bot.hack import HackyMiddleware
 from bot.enums import BotEventMethods
 from chat.repository import ChatRepo
@@ -18,7 +18,7 @@ class TgBot(object):
     secret: str
     method: BotEventMethods
 
-    routers = [ router ]
+    routers = routers
 
     def __something_hacky__(self):
         hacky = HackyMiddleware(self)
@@ -26,7 +26,7 @@ class TgBot(object):
         self.dispatcher.startup.register(hacky.startup)
         self.dispatcher.shutdown.register(hacky.shutdown)
 
-    def __init__(self, token: str, chat_repo: ChatRepo, webhook_host: str, parse_mode: ParseMode = ParseMode.MARKDOWN, webhook_secret: str = ''):
+    def __init__(self, token: str, chat_repo: ChatRepo, webhook_host: str, parse_mode: ParseMode = ParseMode.MARKDOWN_V2, webhook_secret: str = ''):
         self.bot = Bot(token, parse_mode=parse_mode)
         self.dispatcher = Dispatcher()
         self.dispatcher.include_routers(*self.routers)
