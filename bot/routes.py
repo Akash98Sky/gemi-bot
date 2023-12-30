@@ -43,7 +43,7 @@ async def echo_handler(message: Message, repo: ChatRepo, history: list[Message] 
         try:
             # Send a reply to the received message
             sent = await message.reply('Thinking...')
-            chat = repo.get_chat_session(message.chat.id)
+            chat = await repo.get_chat_session(message.chat.id)
             
             response = ''
             prompts = [ message.text ]
