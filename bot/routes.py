@@ -10,7 +10,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.utils.markdown import hbold
 
 from bot.middlewares import ChatHistoryMiddleware, PhotoDownloadMiddleware
-from chat.service import ChatService
+from chat.repository import ChatRepo
 
 # All handlers should be attached to the Router (or Dispatcher)
 router = Router(name='/')
@@ -32,7 +32,7 @@ async def command_start_handler(message: Message) -> None:
 
 
 @router.message()
-async def echo_handler(message: Message, state: FSMContext, chat: ChatService) -> None:
+async def echo_handler(message: Message, repo: ChatRepo, history: list[Message] = []) -> None:
     """
     Handler will forward receive a message back to the sender
 
@@ -43,9 +43,14 @@ async def echo_handler(message: Message, state: FSMContext, chat: ChatService) -
         try:
             # Send a reply to the received message
             sent = await message.reply('Thinking...')
-            message.reply_to_message
+            chat = repo.get_chat_session(message.chat.id)
+            
             response = ''
-            async for reply in chat.gen_response_stream(message.text):
+            prompts = [ message.text ]
+            if len(history) > 0:
+                prompts.append(history[-1].text)
+            
+            async for reply in chat.send_message_async(prompts):
                 response = response + reply
                 try:
                     sent = await sent.edit_text(text=response)
