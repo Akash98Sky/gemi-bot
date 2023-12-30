@@ -13,6 +13,8 @@ class PromptGenMiddleware(BaseMiddleware):
     async def __msg_to_prompt__(self, msg: Message):
         prompts: list[Union[str, Image]] = []
         
+        if (msg.text and len(msg.text) > 0):
+            prompts.append(msg.text)
         if (msg.photo and len(msg.photo) > 0):
             limit_size = [p for p in msg.photo if p.file_size <= 200000] # limit to 200kb
             limit_size.sort(key=lambda ps: ps.file_size)
@@ -20,9 +22,6 @@ class PromptGenMiddleware(BaseMiddleware):
             photo_bytes = BytesIO()
             photo_bytes = await msg.bot.download(photo_id, photo_bytes)
             prompts.append(open(photo_bytes))
-        
-        if (msg.text and len(msg.text) > 0):
-            prompts.append(msg.text)
 
         return prompts
 
@@ -36,13 +35,13 @@ class PromptGenMiddleware(BaseMiddleware):
         prompts: list[Union[str, Image]] = []
         tasks: list[asyncio.Task] = []
 
+        tasks.append(asyncio.create_task(self.__msg_to_prompt__(event)))
+        tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))
+
         reply_of = event.reply_to_message
         if (reply_of):
             tasks.append(asyncio.create_task(self.__msg_to_prompt__(reply_of)))
             tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))
-
-        tasks.append(asyncio.create_task(self.__msg_to_prompt__(event)))
-        tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))
 
         await asyncio.gather(*tasks)
         data['sent'] = sent
