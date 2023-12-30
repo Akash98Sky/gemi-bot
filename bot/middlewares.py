@@ -14,8 +14,8 @@ class PromptGenMiddleware(BaseMiddleware):
         prompts: list[Union[str, Image]] = []
         
         if (msg.photo and len(msg.photo) > 0):
-            msg.photo.sort(key=lambda ps: ps.file_size)
-            limit_size = [p for p in msg.photo if p.file_size <= 100000] # limit to 200kb
+            limit_size = [p for p in msg.photo if p.file_size <= 200000] # limit to 200kb
+            limit_size.sort(key=lambda ps: ps.file_size)
             photo_id = limit_size[-1].file_id
             photo_bytes = BytesIO()
             photo_bytes = await msg.bot.download(photo_id, photo_bytes)
