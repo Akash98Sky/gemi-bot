@@ -1,24 +1,28 @@
-from asyncio import sleep
 import logging
-from typing import Any, Dict
-from aiogram import Router, Bot
-from aiogram.fsm.context import FSMContext
+from PIL.Image import Image
+from typing import Any, Dict, Union
+from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.utils.markdown import hbold
+from aiogram.utils.markdown import bold, italic
 
-from bot.middlewares import ChatHistoryMiddleware, PhotoDownloadMiddleware
+from bot.middlewares import PromptGenMiddleware
 from chat.repository import ChatRepo
 
 # All handlers should be attached to the Router (or Dispatcher)
-router = Router(name='/')
+command_router = Router(name='/')
+message_router = Router(name='/commands')
 
-router.message.middleware(ChatHistoryMiddleware())
-# router.message.middleware(PhotoDownloadMiddleware())
+routers = [
+    command_router,
+    message_router
+]
 
-@router.message(CommandStart())
+message_router.message.middleware(PromptGenMiddleware())
+
+@command_router.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
     """
     This handler receives messages with `/start` command
@@ -28,32 +32,31 @@ async def command_start_handler(message: Message) -> None:
     # and the target chat will be passed to :ref:`aiogram.methods.send_message.SendMessage`
     # method automatically or call API method directly via
     # Bot instance: `bot.send_message(chat_id=message.chat.id, ...)`
-    await message.answer(f"Hello, {hbold(message.from_user.full_name)}!", parse_mode=ParseMode.HTML)
+    await message.answer(f"Hello, {bold(message.from_user.full_name)}\!")
 
 
-@router.message()
-async def echo_handler(message: Message, repo: ChatRepo, history: list[Message] = []) -> None:
+@message_router.message()
+async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str, Image]] = [], sent: Message | None = None) -> None:
     """
     Handler will forward receive a message back to the sender
 
     By default, message handler will handle all message types (like a text, photo, sticker etc.)
     """
-    sent: Message | None = None
     try:
         try:
             # Send a reply to the received message
-            sent = await message.reply('Thinking...')
+            if sent:
+                await sent.edit_text(text=italic("Thinking..."))
+            else:
+                sent = await message.reply(text=italic('Thinking...'))
+
             chat = await repo.get_chat_session(message.chat.id)
             
-            response = ''
-            prompts = [ message.text ]
-            if len(history) > 0:
-                prompts.append(history[-1].text)
-            
+            response = ""
             async for reply in chat.send_message_async(prompts):
                 response = response + reply
                 try:
-                    sent = await sent.edit_text(text=response)
+                    sent = await sent.edit_text(text=response, parse_mode=ParseMode.MARKDOWN)
                 except TelegramBadRequest as e:
                     # Ignore intermediate errors
                     if e.message.find('not found') != -1:
