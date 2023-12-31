@@ -4,3 +4,4 @@ google-generativeai>=0.3.2,<0.4
 gunicorn>=21.2.0,<21.3
 pillow~=10.1.0
 pypdfium2~=4.25.0
+duckduckgo-search~=4.1.1

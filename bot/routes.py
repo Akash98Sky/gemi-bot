@@ -20,7 +20,7 @@ routers = [
     message_router
 ]
 
-message_router.message.middleware(PromptGenMiddleware())
+message_router.message.middleware.register(PromptGenMiddleware())
 
 @command_router.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
