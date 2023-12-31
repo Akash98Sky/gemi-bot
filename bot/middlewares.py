@@ -1,30 +1,84 @@
 import asyncio
+import logging
 from typing import Any, Awaitable, Callable, Dict, Union
-from aiogram import BaseMiddleware
-from aiogram.types import Message
+from aiogram import BaseMiddleware, Bot
+from aiogram.types import Message, Document, PhotoSize
 from aiogram.utils.markdown import italic
 from io import BytesIO
 from PIL.Image import Image, open
+import pypdfium2 as pdfium
+from utils.docreader import get_docx_text
+
+class UnsupportedFileFormatException(Exception):
+    pass
 
 class PromptGenMiddleware(BaseMiddleware):
     def __init__(self) -> None:
         self.counter = 0
 
-    async def __msg_to_prompt__(self, msg: Message):
+    async def __gen_img_prompt__(self, photo: list[Union[PhotoSize, Document]], bot: Bot):
+        limit_size = [p for p in photo if p.file_size <= 150000] # limit to 150kb
+        limit_size.sort(key=lambda ps: ps.file_size)
+        if len(limit_size) == 0:
+            # if no photo in limit_size, use the smallest one
+            limit_size.append(photo[0])
+
+        photo_id = limit_size[-1].file_id
+        photo_bytes = BytesIO()
+        photo_bytes = await bot.download(photo_id, photo_bytes)
+        img = open(photo_bytes)
+        if img.mode == 'RGB':
+            return img
+        else:
+            return img.convert('RGB')
+        
+    async def __gen_pdf_prompt__(self, document: Document, bot: Bot):
+        with await bot.download(document.file_id, BytesIO()) as binfile:
+            pdf = pdfium.PdfDocument(binfile)
+            pdf_text = f"FileName: {document.file_name}\n\n"
+            for page in pdf:
+                pdf_text += page.get_textpage().get_text_range()
+            return pdf_text
+    
+    async def __gen_txt_prompt__(self, document: Document, bot: Bot):
+        text = f"FileName: {document.file_name}\n\n"
+        with await bot.download(document.file_id, BytesIO()) as binfile:
+            text +=  binfile.read().decode('utf-8')
+        return text
+    
+    # TODO: Fix docx file text extraction
+    async def __gen_docx_prompt__(self, document: Document, bot: Bot):
+        text = f"FileName: {document.file_name}\n\n"
+        with await bot.download(document.file_id, BytesIO()) as binfile:
+            text += get_docx_text(binfile)
+        return text
+
+    async def __msg_to_prompt__(self, msg: Message, exclude_caption: bool = False):
         prompts: list[Union[str, Image]] = []
         
         if (msg.text and len(msg.text) > 0):
             prompts.append(msg.text)
         elif (msg.photo and len(msg.photo) > 0):
-            if (msg.caption and len(msg.caption) > 0):
+            if (not exclude_caption and msg.caption and len(msg.caption) > 0):
                 prompts.append(msg.caption)
             
-            limit_size = [p for p in msg.photo if p.file_size <= 200000] # limit to 200kb
-            limit_size.sort(key=lambda ps: ps.file_size)
-            photo_id = limit_size[-1].file_id
-            photo_bytes = BytesIO()
-            photo_bytes = await msg.bot.download(photo_id, photo_bytes)
-            prompts.append(open(photo_bytes))
+            prompts.append(await self.__gen_img_prompt__(msg.photo, bot=msg.bot))
+        elif (msg.sticker):
+            if (msg.sticker.thumbnail):
+                prompts.append(await self.__gen_img_prompt__([msg.sticker.thumbnail], bot=msg.bot))
+            elif (msg.sticker.emoji and len(msg.sticker.emoji) > 0):
+                prompts.append(msg.sticker.emoji)
+        elif (msg.animation and msg.animation.thumbnail):
+            prompts.append(await self.__gen_img_prompt__([msg.animation.thumbnail], bot=msg.bot))
+        elif (msg.document):
+            if (msg.document.mime_type.startswith('image')):
+                prompts.append(await self.__gen_img_prompt__([msg.document.thumbnail], bot=msg.bot))
+            elif (msg.document.mime_type == 'application/pdf'):
+                prompts.append(await self.__gen_pdf_prompt__(msg.document, bot=msg.bot))
+            elif (msg.document.mime_type.startswith('text')):
+                prompts.append(await self.__gen_txt_prompt__(msg.document, bot=msg.bot))
+            else:
+                raise UnsupportedFileFormatException()
 
         return prompts
 
@@ -34,19 +88,32 @@ class PromptGenMiddleware(BaseMiddleware):
         event: Message,
         data: Dict[str, Any]
     ) -> Any:
-        sent = await event.reply(italic('Downloading message...'))
-        prompts: list[Union[str, Image]] = []
-        tasks: list[asyncio.Task] = []
+        sent = None
+        try:
+            sent = await event.reply(italic('Downloading message...'))
+            prompts: list[Union[str, Image]] = []
+            tasks: list[asyncio.Task] = []
 
-        tasks.append(asyncio.create_task(self.__msg_to_prompt__(event)))
-        tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))
-
-        reply_of = event.reply_to_message
-        if (reply_of):
-            tasks.append(asyncio.create_task(self.__msg_to_prompt__(reply_of)))
+            tasks.append(asyncio.create_task(self.__msg_to_prompt__(event)))
             tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))
 
-        await asyncio.gather(*tasks)
+            reply_of = event.reply_to_message
+            if (reply_of):
+                tasks.append(asyncio.create_task(self.__msg_to_prompt__(reply_of, exclude_caption=True)))
+                tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))
+
+            await asyncio.gather(*tasks)
+        except UnsupportedFileFormatException:
+            await sent.edit_text(italic('Unsupported document type.'))
+            return
+        except Exception as e:
+            logging.error(e)
+            if sent:
+                await sent.edit_text(italic('Error while downloading message.'))
+            else:
+                await event.reply(italic('Error while downloading message.'))
+            return
+
         data['sent'] = sent
         data['prompts'] = prompts
 
