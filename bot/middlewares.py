@@ -7,7 +7,6 @@ from aiogram.utils.markdown import italic
 from io import BytesIO
 from PIL.Image import Image, open
 import pypdfium2 as pdfium
-from duckduckgo_search import AsyncDDGS
 
 from bot.exceptions import UnsupportedFileFormatException
 from utils.docreader import get_docx_text
@@ -49,23 +48,12 @@ class PromptGenMiddleware(BaseMiddleware):
         with await bot.download(document.file_id, BytesIO()) as binfile:
             text += get_docx_text(binfile)
         return text
-    
-    async def __gen_live_data_prompt__(self, query: str):
-        text = f"Search engine response:\n\n"
-        async with AsyncDDGS() as ddgs:
-            async for res in ddgs.text(query, region="in-en", max_results=1):
-                text += f"Title: {res['title']}\n"
-                text += f"Body: {res['body']}\n"
-        return text
 
     async def __msg_to_prompt__(self, msg: Message, exclude_caption: bool = False):
         prompts: list[Union[str, Image]] = []
         
         if (msg.text and len(msg.text) > 0):
-            prompts.append(msg.text + "\n\nNote: Use Search engine response to respond to data queries that you're not aware of")
-            if(len(msg.text) >= 3 and len(msg.text) <= 50):
-                # TODO: Fetch query from gemini response
-                prompts.append(await self.__gen_live_data_prompt__(msg.text))
+            prompts.append(msg.text)
         elif (msg.photo and len(msg.photo) > 0):
             if (not exclude_caption and msg.caption and len(msg.caption) > 0):
                 prompts.append(msg.caption)

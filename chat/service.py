@@ -2,7 +2,8 @@ import textwrap
 from typing import Iterable, Union
 from PIL.Image import Image
 import google.generativeai as genai
-from google.generativeai.generative_models import content_types, ChatSession, generation_types
+from google.generativeai.generative_models import content_types, ChatSession
+from prompts.static import CHAT_INIT_HISTORY
 
 class ChatService(object):
     model: genai.GenerativeModel
@@ -38,10 +39,11 @@ class ChatService(object):
         async for response in responses:
             yield response.text
 
-    def create_chat_session(self, history: Iterable[content_types.StrictContentType] = []):
+    def create_chat_session(self, history: list[content_types.StrictContentType] = []):
         if next((prompt for prompt in history if isinstance(prompt, Image)), None) != None:
             return self.vision_model.start_chat(history=history)
         else:
+            history.extend(CHAT_INIT_HISTORY)
             return self.model.start_chat(history=history)
 
     async def gen_chat_response_stream(self, chat: ChatSession, prompts: Iterable[Union[str, Image]]):
