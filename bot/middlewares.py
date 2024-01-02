@@ -8,7 +8,7 @@ from io import BytesIO
 from PIL.Image import Image, open
 import pypdfium2 as pdfium
 
-from bot.exceptions import UnsupportedFileFormatException
+from bot.exceptions import FileSizeTooBigException, UnsupportedFileFormatException
 from utils.docreader import get_docx_text
 
 class PromptGenMiddleware(BaseMiddleware):
@@ -16,6 +16,9 @@ class PromptGenMiddleware(BaseMiddleware):
         limit_size = [p for p in photo if p.file_size <= 150000] # limit to 150kb
         limit_size.sort(key=lambda ps: ps.file_size)
         if len(limit_size) == 0:
+            # if greater than 20 MB raise exception
+            if photo[0].file_size > 20000000:
+                raise FileSizeTooBigException()
             # if no photo in limit_size, use the smallest one
             limit_size.append(photo[0])
 
@@ -29,6 +32,10 @@ class PromptGenMiddleware(BaseMiddleware):
             return img.convert('RGB')
         
     async def __gen_pdf_prompt__(self, document: Document, bot: Bot):
+        # if greater than 20 MB raise exception
+        if document.file_size > 20000000:
+            raise FileSizeTooBigException()
+        
         with await bot.download(document.file_id, BytesIO()) as binfile:
             pdf = pdfium.PdfDocument(binfile)
             pdf_text = f"FileName: {document.file_name}\n\n"
@@ -37,6 +44,10 @@ class PromptGenMiddleware(BaseMiddleware):
             return pdf_text
     
     async def __gen_txt_prompt__(self, document: Document, bot: Bot):
+        # if greater than 20 MB raise exception
+        if document.file_size > 20000000:
+            raise FileSizeTooBigException()
+
         text = f"FileName: {document.file_name}\n\n"
         with await bot.download(document.file_id, BytesIO()) as binfile:
             text +=  binfile.read().decode('utf-8')
@@ -44,6 +55,10 @@ class PromptGenMiddleware(BaseMiddleware):
     
     # TODO: Fix docx file text extraction
     async def __gen_docx_prompt__(self, document: Document, bot: Bot):
+        # if greater than 20 MB raise exception
+        if document.file_size > 20000000:
+            raise FileSizeTooBigException()
+        
         text = f"FileName: {document.file_name}\n\n"
         with await bot.download(document.file_id, BytesIO()) as binfile:
             text += get_docx_text(binfile)
@@ -101,6 +116,9 @@ class PromptGenMiddleware(BaseMiddleware):
             await asyncio.gather(*tasks)
         except UnsupportedFileFormatException:
             await sent.edit_text(italic('Unsupported document type.'))
+            return
+        except FileSizeTooBigException:
+            await sent.edit_text(italic('File size too big.'))
             return
         except Exception as e:
             logging.error(e)
