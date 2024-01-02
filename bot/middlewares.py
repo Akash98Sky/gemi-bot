@@ -7,9 +7,8 @@ from aiogram.utils.markdown import italic
 from io import BytesIO
 from PIL.Image import Image, open
 import pypdfium2 as pdfium
-from duckduckgo_search import AsyncDDGS
 
-from bot.exceptions import UnsupportedFileFormatException
+from bot.exceptions import FileSizeTooBigException, UnsupportedFileFormatException
 from utils.docreader import get_docx_text
 
 class PromptGenMiddleware(BaseMiddleware):
@@ -17,6 +16,9 @@ class PromptGenMiddleware(BaseMiddleware):
         limit_size = [p for p in photo if p.file_size <= 150000] # limit to 150kb
         limit_size.sort(key=lambda ps: ps.file_size)
         if len(limit_size) == 0:
+            # if greater than 20 MB raise exception
+            if photo[0].file_size > 20000000:
+                raise FileSizeTooBigException()
             # if no photo in limit_size, use the smallest one
             limit_size.append(photo[0])
 
@@ -30,6 +32,10 @@ class PromptGenMiddleware(BaseMiddleware):
             return img.convert('RGB')
         
     async def __gen_pdf_prompt__(self, document: Document, bot: Bot):
+        # if greater than 20 MB raise exception
+        if document.file_size > 20000000:
+            raise FileSizeTooBigException()
+        
         with await bot.download(document.file_id, BytesIO()) as binfile:
             pdf = pdfium.PdfDocument(binfile)
             pdf_text = f"FileName: {document.file_name}\n\n"
@@ -38,6 +44,10 @@ class PromptGenMiddleware(BaseMiddleware):
             return pdf_text
     
     async def __gen_txt_prompt__(self, document: Document, bot: Bot):
+        # if greater than 20 MB raise exception
+        if document.file_size > 20000000:
+            raise FileSizeTooBigException()
+
         text = f"FileName: {document.file_name}\n\n"
         with await bot.download(document.file_id, BytesIO()) as binfile:
             text +=  binfile.read().decode('utf-8')
@@ -45,27 +55,20 @@ class PromptGenMiddleware(BaseMiddleware):
     
     # TODO: Fix docx file text extraction
     async def __gen_docx_prompt__(self, document: Document, bot: Bot):
+        # if greater than 20 MB raise exception
+        if document.file_size > 20000000:
+            raise FileSizeTooBigException()
+        
         text = f"FileName: {document.file_name}\n\n"
         with await bot.download(document.file_id, BytesIO()) as binfile:
             text += get_docx_text(binfile)
-        return text
-    
-    async def __gen_live_data_prompt__(self, query: str):
-        text = f"Search engine response:\n\n"
-        async with AsyncDDGS() as ddgs:
-            async for res in ddgs.text(query, region="in-en", max_results=1):
-                text += f"Title: {res['title']}\n"
-                text += f"Body: {res['body']}\n"
         return text
 
     async def __msg_to_prompt__(self, msg: Message, exclude_caption: bool = False):
         prompts: list[Union[str, Image]] = []
         
         if (msg.text and len(msg.text) > 0):
-            prompts.append(msg.text + "\n\nNote: Use Search engine response to respond to data queries that you're not aware of")
-            if(len(msg.text) >= 3 and len(msg.text) <= 50):
-                # TODO: Fetch query from gemini response
-                prompts.append(await self.__gen_live_data_prompt__(msg.text))
+            prompts.append(msg.text)
         elif (msg.photo and len(msg.photo) > 0):
             if (not exclude_caption and msg.caption and len(msg.caption) > 0):
                 prompts.append(msg.caption)
@@ -113,6 +116,9 @@ class PromptGenMiddleware(BaseMiddleware):
             await asyncio.gather(*tasks)
         except UnsupportedFileFormatException:
             await sent.edit_text(italic('Unsupported document type.'))
+            return
+        except FileSizeTooBigException:
+            await sent.edit_text(italic('File size too big.'))
             return
         except Exception as e:
             logging.error(e)
