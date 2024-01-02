@@ -1,12 +1,18 @@
 
 import asyncio
 import logging
-from typing import Any, AsyncGenerator, Callable
 from duckduckgo_search import AsyncDDGS
+from google.generativeai.generative_models import ChatSession, content_types
 
+from chat.service import ChatService
 from prompts.templates import build_searchengine_response_prompt
 
 class QueryProcessor():
+    __service: ChatService
+
+    def __init__(self, service: ChatService):
+        self.__service = service
+
     async def __process_searchengine_query__(self, query: str):
         async with AsyncDDGS() as ddgs:
             async for res in ddgs.text(query, region="in-en", max_results=1):
@@ -27,14 +33,15 @@ class QueryProcessor():
         logging.debug(f"Query responses: {query_responses}")
         return build_searchengine_response_prompt(query_responses)
     
-    async def intercepted_response(self, res: AsyncGenerator[str, Any], on_query_cb: Callable[[str], AsyncGenerator[str, Any]]):
+    async def process_response(self, session: ChatSession, messages: list[content_types.PartType]):
         text = ""
         has_query = False
-        async for r in res:
-            text += r
+        response_stream = self.__service.gen_response_stream(prompts=messages, chat=session)
+        async for res in response_stream:
+            text += res
             if has_query:
                 pass
-            elif len(r) >= 22:
+            elif len(text) >= 22:
                 if text.startswith("search_queries:"):
                     has_query = True
                 else:
@@ -42,9 +49,8 @@ class QueryProcessor():
                     text = ""
 
         if has_query:
-            queries = text.split("\n-")
+            queries = text.replace("search_queries:\n-", "").split("\n-")
             query_responses_prompt = await self.__gen_live_data_prompt__(queries)
-            async for r in on_query_cb(query_responses_prompt):
-                yield r
-            
-
+            response_stream = self.__service.gen_response_stream(prompts=[query_responses_prompt], chat=session)
+            async for res in response_stream:
+                yield res
