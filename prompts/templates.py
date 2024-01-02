@@ -4,6 +4,7 @@ def build_searchengine_response_prompt(responses: list[dict[str, str]]):
         res += f"- Query: {response['query']}\n"
         res += f"  Title: {response['title']}\n"
         res += f"  Body: {response['body']}\n"
+        res += f"  URL: {response['href']}\n"
     return res
 
 def build_msg_metadata_prompt(meta: dict[str, str]):

@@ -35,20 +35,24 @@ class QueryProcessor():
     
     async def process_response(self, session: ChatSession, messages: list[content_types.PartType]):
         text = ""
-        has_query = True
+        has_query = False
         response_stream = self.__service.gen_response_stream(prompts=messages, chat=session)
 
         async for res in response_stream:
             text += res
-            if not has_query:
-                yield text
-                text = ""
-            elif len(text) > 15 and not text.startswith("search_queries:"):
-                has_query = False
+            if len(text) > 15:
+                if text.startswith("search_queries:"):
+                    has_query = True
+                else:
+                    yield text
+                    text = ""
 
-        if len(text) > 15 and has_query:
+        if len(text) > 0 and not has_query:
+            yield text
+
+        if has_query:
             queries = text.replace("search_queries:\n-", "").split("\n-")
             query_responses_prompt = await self.__gen_live_data_prompt__(queries)
-            response_stream = self.__service.gen_response_stream(prompts=[query_responses_prompt], chat=session)
+            response_stream = self.process_response(session=session, messages=[query_responses_prompt])
             async for res in response_stream:
                 yield res
