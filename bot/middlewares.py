@@ -9,6 +9,7 @@ from PIL.Image import Image, open
 import pypdfium2 as pdfium
 
 from bot.exceptions import FileSizeTooBigException, UnsupportedFileFormatException
+from prompts.templates import build_msg_metadata_prompt
 from utils.docreader import get_docx_text
 
 class PromptGenMiddleware(BaseMiddleware):
@@ -66,6 +67,10 @@ class PromptGenMiddleware(BaseMiddleware):
 
     async def __msg_to_prompt__(self, msg: Message, exclude_caption: bool = False):
         prompts: list[Union[str, Image]] = []
+        meta_dict: dict[str, str] = {
+            'timestamp': str(msg.date),
+            'message_type': str(msg.content_type),
+        }
         
         if (msg.text and len(msg.text) > 0):
             prompts.append(msg.text)
@@ -82,6 +87,7 @@ class PromptGenMiddleware(BaseMiddleware):
         elif (msg.animation and msg.animation.thumbnail):
             prompts.append(await self.__gen_img_prompt__([msg.animation.thumbnail], bot=msg.bot))
         elif (msg.document):
+            meta_dict['mime_type'] = msg.document.mime_type
             if (msg.document.mime_type.startswith('image')):
                 prompts.append(await self.__gen_img_prompt__([msg.document.thumbnail], bot=msg.bot))
             elif (msg.document.mime_type == 'application/pdf'):
@@ -91,6 +97,7 @@ class PromptGenMiddleware(BaseMiddleware):
             else:
                 raise UnsupportedFileFormatException()
 
+        prompts.append(build_msg_metadata_prompt(meta_dict))
         return prompts
 
     async def __call__(

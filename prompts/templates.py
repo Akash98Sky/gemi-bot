@@ -11,4 +11,4 @@ def build_msg_metadata_prompt(meta: dict[str, str]):
     res = "message_metadata:\n"
     for key in meta:
         res += f"  {key}: {meta[key]}\n"
-    return res + "\n"
+    return res
