@@ -72,7 +72,7 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
     except TelegramBadRequest as e:
         # Ignore intermediate errors
         logging.warn(f'Failed to reply message: {message.text}, TelegramBadRequest: {e}')
-        pass
+        sent.edit_text(text=italic('Failed to reply, try again...'))
     except Exception as e:
         # But not all the types is supported to be copied so need to handle it
         if sent != None:
