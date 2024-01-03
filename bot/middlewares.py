@@ -65,7 +65,7 @@ class PromptGenMiddleware(BaseMiddleware):
             text += get_docx_text(binfile)
         return text
 
-    async def __msg_to_prompt__(self, msg: Message, exclude_caption: bool = False):
+    async def __msg_to_prompt__(self, msg: Message, exclude_caption: bool = False, exclude_metadata: bool = False):
         prompts: list[Union[str, Image]] = []
         meta_dict: dict[str, str] = {
             'timestamp': str(msg.date),
@@ -97,7 +97,8 @@ class PromptGenMiddleware(BaseMiddleware):
             else:
                 raise UnsupportedFileFormatException()
 
-        prompts.append(build_msg_metadata_prompt(meta_dict))
+        if not exclude_metadata:
+            prompts.append(build_msg_metadata_prompt(meta_dict))
         return prompts
 
     async def __call__(
@@ -117,7 +118,7 @@ class PromptGenMiddleware(BaseMiddleware):
 
             reply_of = event.reply_to_message
             if (reply_of):
-                tasks.append(asyncio.create_task(self.__msg_to_prompt__(reply_of, exclude_caption=True)))
+                tasks.append(asyncio.create_task(self.__msg_to_prompt__(reply_of, exclude_caption=True, exclude_metadata=True)))
                 tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))
 
             await asyncio.gather(*tasks)

@@ -43,34 +43,40 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
     By default, message handler will handle all message types (like a text, photo, sticker etc.)
     """
     try:
-        try:
-            # Send a reply to the received message
-            if sent:
-                await sent.edit_text(text=italic("Thinking..."))
-            else:
-                sent = await message.reply(text=italic('Thinking...'))
+        # Send a reply to the received message
+        if sent:
+            await sent.edit_text(text=italic("Thinking..."))
+        else:
+            sent = await message.reply(text=italic('Thinking...'))
 
-            chat = await repo.get_chat_session(message.chat.id)
-            
-            response = ""
-            async for reply in chat.send_message_async(prompts):
-                response = response + reply
-                try:
-                    sent = await sent.edit_text(text=response, parse_mode=ParseMode.MARKDOWN)
-                except TelegramBadRequest as e:
-                    # Ignore intermediate errors
-                    if e.message.find('not found') != -1:
-                        # The message was deleted
-                        break
-                    else:
-                        pass
-        except Exception as e:
-            # But not all the types is supported to be copied so need to handle it
-            if sent != None:
-                await sent.edit_text(text=f'Oops! Failed...\n\n{type(e).__name__}: {e}', parse_mode=ParseMode.HTML)
-            else:
-                await message.reply(f'Oops! Failed...\n\n{type(e).__name__}: {e}', parse_mode=ParseMode.HTML)
+        chat = await repo.get_chat_session(message.chat.id)
+        
+        response = ""
+        error: TelegramBadRequest | None = None
+        async for reply in chat.send_message_async(prompts):
+            response = response + reply
+            try:
+                error = None
+                sent = await sent.edit_text(text=response, parse_mode=ParseMode.MARKDOWN)
+            except TelegramBadRequest as e:
+                error = e
+                # Ignore intermediate errors
+                if e.message.find('not found') != -1:
+                    # The message was deleted
+                    break
+                else:
+                    pass
+
+        if error:
+            raise error
     except TelegramBadRequest as e:
         # Ignore intermediate errors
-        logging.warn(f'Failed to send message: {message.text}, TelegramBadRequest: {e}')
+        logging.warn(f'Failed to reply message: {message.text}, TelegramBadRequest: {e}')
         pass
+    except Exception as e:
+        # But not all the types is supported to be copied so need to handle it
+        if sent != None:
+            await sent.edit_text(text=f'Oops! Failed...\n\n{type(e).__name__}: {e}', parse_mode=ParseMode.HTML)
+        else:
+            await message.reply(f'Oops! Failed...\n\n{type(e).__name__}: {e}', parse_mode=ParseMode.HTML)
+    
