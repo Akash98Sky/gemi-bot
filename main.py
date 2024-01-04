@@ -29,6 +29,7 @@ def log_integration():
             # of sampled transactions.
             # We recommend adjusting this value in production.
             profiles_sample_rate=1.0,
+            environment=getenv('ENV', 'dev'),
             integrations=[
                 LoggingIntegration(
                     level=logging.INFO,        # Capture info and above as breadcrumbs
@@ -53,7 +54,7 @@ def init_bot(app: Application):
 
 async def web_app():
     log_integration()
-    
+
     app = Application()
     init_bot(app)
     app.router.add_routes(routes)
