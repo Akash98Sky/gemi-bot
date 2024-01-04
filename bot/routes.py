@@ -73,6 +73,7 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
         sent.edit_text(text=italic('Failed to reply, try again...'))
     except Exception as e:
         # But not all the types is supported to be copied so need to handle it
+        logging.error(f'Failed to reply message: {message.text}, Exception: {e}', stack_info=True)
         if sent != None:
             await sent.edit_text(text=f'Oops! Failed...\n\n{type(e).__name__}: {e}', parse_mode=ParseMode.HTML)
         else:
