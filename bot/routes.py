@@ -64,8 +64,6 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
                 if e.message.find('not found') != -1:
                     # The message was deleted
                     break
-                else:
-                    pass
 
         if error:
             raise error

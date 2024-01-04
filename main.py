@@ -1,9 +1,9 @@
-import asyncio
 import logging
 import sys
 from aiohttp.web import Application, run_app
-from bot.bot import TgBot
-from bot.enums import BotEventMethods
+import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration
+from os import getenv
 
 from containers import BotContainer, Configs
 from api.routes import routes
@@ -16,31 +16,28 @@ def debugger_is_active() -> bool:
     """Return if the debugger is currently active"""
     return hasattr(sys, 'gettrace') and sys.gettrace() is not None
 
-# async def start_bot(bot: TgBot):
-#     logging.info("Starting up bot...")
-#     await bot.delete_webhook()
-#     asyncio.create_task(bot.start_polling())
-
-# async def on_startup(_):
-#     bot = BotContainer.tg_bot()
-    
-#     if bot.method != BotEventMethods.polling:
-#         await start_bot(bot)
-
-# async def on_shutdown(_):
-#     logging.info("Shutting down bot...")
-    
-#     bot = BotContainer.tg_bot()
-#     # stop polling
-#     if bot.method == BotEventMethods.polling:
-#         await bot.stop_polling()
-#     # set webhook on app shutdown
-#     bot.webhook_path = WEBHOOK_PATH
-#     await bot.set_webhook()
+def log_integration():
+    logging.basicConfig(level=logging.DEBUG if debugger_is_active() else logging.INFO)
+    if  not debugger_is_active():
+        logging.info("Setting up Sentry")        
+        sentry_sdk.init(
+            dsn=getenv("SENTRY_DSN"),
+            # Set traces_sample_rate to 1.0 to capture 100%
+            # of transactions for performance monitoring.
+            traces_sample_rate=1.0,
+            # Set profiles_sample_rate to 1.0 to profile 100%
+            # of sampled transactions.
+            # We recommend adjusting this value in production.
+            profiles_sample_rate=1.0,
+            integrations=[
+                LoggingIntegration(
+                    level=logging.INFO,        # Capture info and above as breadcrumbs
+                    event_level=logging.WARNING,   # Send records as events
+                )
+            ]
+        )
 
 def init_bot(app: Application):
-    logging.basicConfig(level=logging.DEBUG if debugger_is_active() else logging.INFO, stream=sys.stdout)
-    
     configs = Configs
     # Bot token can be obtained via https://t.me/BotFather
     configs.bot_config.token.from_env("BOT_TOKEN", required=True)
@@ -55,8 +52,9 @@ def init_bot(app: Application):
     BotContainer.tg_bot().register_webhook_handler(app, WEBHOOK_PATH)
 
 async def web_app():
+    log_integration()
+    
     app = Application()
-
     init_bot(app)
     app.router.add_routes(routes)
 
