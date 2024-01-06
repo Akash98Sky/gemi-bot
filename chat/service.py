@@ -24,10 +24,24 @@ class ChatService(object):
             return True
         else:
             return False
+        
+    def __to_user_content__(self, text: str):
+        return content_types.strict_to_content(content_types.ContentDict(
+            parts=[text],
+            role="user"
+        ))
+    
+    def __to_model_content__(self, text: str):
+        return content_types.to_content(content_types.ContentDict(
+            parts=[text],
+            role="model"
+        ))
 
-    async def gen_response(self, prompts: Union[Iterable[Union[str, Image]], str], chat: ChatSession | None = None, stream = False):
+    async def gen_response(self, prompts: Iterable[Union[str, Image]], chat: ChatSession | None = None, stream = False):
+        is_vision = False
         try:
             if self.__is_vision_prompt(prompts):
+                is_vision = True
                 response = await self.vision_model.generate_content_async(contents=prompts, stream=stream)
             elif chat:
                 response = await chat.send_message_async(content=prompts, stream=stream)
@@ -36,6 +50,11 @@ class ChatService(object):
         
             async for res in response:
                 yield res.text
+
+            if is_vision and chat:
+                user_prompt = '\n'.join([prompt for prompt in prompts if isinstance(prompt, str)])
+                chat.history.append(self.__to_user_content__(user_prompt))
+                chat.history.append(self.__to_model_content__(response.text))
         except generation_types.BrokenResponseError as e:
             logging.exception(e)
             if chat:
