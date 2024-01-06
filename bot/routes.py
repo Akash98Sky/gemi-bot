@@ -1,15 +1,17 @@
-import logging
+from logging import Logger, getLogger
 from PIL.Image import Image
 from typing import Any, Dict, Union
 from aiogram import Router
 from aiogram.filters import CommandStart
-from aiogram.types import Message, InputMediaPhoto
+from aiogram.types import Message
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.utils.markdown import bold, italic
 
 from bot.middlewares import PromptGenMiddleware
 from chat.repository import Chat, ChatRepo
+
+logging: Logger = getLogger(__name__)
 
 # All handlers should be attached to the Router (or Dispatcher)
 command_router = Router(name='/')

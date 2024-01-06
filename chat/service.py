@@ -1,10 +1,12 @@
-import logging
+from logging import Logger, getLogger
 from typing import Iterable, Union
 from PIL.Image import Image
 import google.generativeai as genai
 from google.generativeai.generative_models import content_types, generation_types, ChatSession
 from prompts.static import CHAT_INIT_HISTORY
 from re_edge_gpt import ImageGenAsync
+
+logging: Logger = getLogger(__name__)
 
 class ChatService(object):
     model: genai.GenerativeModel

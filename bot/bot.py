@@ -1,4 +1,4 @@
-import logging
+from logging import Logger, getLogger
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
@@ -8,6 +8,8 @@ from bot.routes import routers
 from bot.hack import HackyMiddleware
 from bot.enums import BotEventMethods
 from chat.repository import ChatRepo
+
+logging: Logger = getLogger(__name__)
 
 class TgBot(object):
     bot: Bot

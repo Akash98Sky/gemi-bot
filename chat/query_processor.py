@@ -1,5 +1,5 @@
 import asyncio
-import logging
+from logging import Logger, getLogger
 import aiohttp
 from aiogram.types import InputMediaPhoto, BufferedInputFile
 from duckduckgo_search import AsyncDDGS
@@ -8,6 +8,8 @@ from google.generativeai.generative_models import ChatSession, content_types
 from chat.service import ChatService
 from prompts.keywords import IMAGE_QUERY, SEARCH_QUERIES
 from prompts.templates import build_searchengine_response_prompt
+
+logging: Logger = getLogger(__name__)
 
 class QueryProcessor():
     __service: ChatService
@@ -35,36 +37,14 @@ class QueryProcessor():
         logging.debug(f"Query responses: {query_responses}")
         return build_searchengine_response_prompt(query_responses)
     
-    async def __download_image__(self, url: str):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    file_format = response.headers.get('content-type').split('/')[-1]
-                    # svg is not supported
-                    if file_format.__contains__('svg'):
-                        raise Exception(f"Url: {url}, unsupported format: {file_format}")
-                    else:
-                        image_bytes = await response.read()
-                        file_name = f"{url.split('/')[-1]}.{file_format}"
-                        return (file_name, image_bytes)
-                else:
-                    raise Exception(f"Url: {url}, status code: {response.status}")
-    
-    async def __fetch_images_from_url__(self, urls: list[str]):
-        tasks: list[asyncio.Task[tuple[str, bytes]]] = []
+    async def __gen_image_data__(self, query: str):
+        logging.debug(f"Generate image query: {query}")
+        image_urls: list[str] | None = await self.__service.gen_image_response(query)
         images: list[InputMediaPhoto] = []
 
-        
-        for url in urls:
-            task = asyncio.create_task(self.__download_image__(url))
-            tasks.append(task)
-
-        for task in asyncio.as_completed(tasks):
-            try:
-                filename, filebytes = await task
-                images.append(InputMediaPhoto(media=BufferedInputFile(filebytes, filename=filename)))
-            except Exception as e:
-                logging.warning(f"Failed to download image: {str(e)}")
+        if image_urls:
+            logging.debug(f"Image URLs: {image_urls}")
+            images = [InputMediaPhoto(media=url) for url in image_urls if not url.endswith('svg')]  # ignore svg format image urls
         
         return images
     
@@ -88,8 +68,7 @@ class QueryProcessor():
         if has_query:
             if text.startswith(f"{IMAGE_QUERY}:"):
                 query = text.replace(f"{IMAGE_QUERY}:", "").strip()
-                image_urls = await self.__service.gen_image_response(query)
-                yield await self.__fetch_images_from_url__(image_urls)
+                yield await self.__gen_image_data__(query)
             else:
                 queries = text.replace(f"{SEARCH_QUERIES}:\n-", "").split("\n-")
                 query_responses_prompt = await self.__gen_live_data_prompt__(queries)

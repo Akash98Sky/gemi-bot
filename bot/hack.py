@@ -1,5 +1,5 @@
 import asyncio
-import logging
+from logging import Logger, getLogger
 from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware
 from aiogram.dispatcher.event.bases import CancelHandler
@@ -9,6 +9,8 @@ from os import getenv
 
 from bot.enums import BotEventMethods
 from utils.aiotimer import Timer
+
+logging: Logger = getLogger(__name__)
 
 MSG_HANDLING_CONCURRENCY = int(getenv('MSG_HANDLING_CONCURRENCY', '20'))
 INACTIVITY_SLEEP_DELAY = int(getenv('INACTIVITY_SLEEP_DELAY', '60'))

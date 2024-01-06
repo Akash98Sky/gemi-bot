@@ -1,5 +1,5 @@
 import asyncio
-import logging
+from logging import Logger, getLogger
 from typing import Any, Awaitable, Callable, Dict, Union
 from aiogram import BaseMiddleware, Bot
 from aiogram.types import Message, Document, PhotoSize
@@ -11,6 +11,8 @@ import pypdfium2 as pdfium
 from bot.exceptions import FileSizeTooBigException, UnsupportedFileFormatException
 from prompts.templates import build_msg_metadata_prompt
 from utils.docreader import get_docx_text
+
+logging: Logger = getLogger(__name__)
 
 class PromptGenMiddleware(BaseMiddleware):
     async def __gen_img_prompt__(self, photo: list[Union[PhotoSize, Document]], bot: Bot):
