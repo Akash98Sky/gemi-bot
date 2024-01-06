@@ -49,6 +49,8 @@ def init_bot(app: Application):
 
     # API key can be obtained via https://platform.openai.com/account/api-keys
     configs.chat_config.api_key.from_env("GOOGLE_API_KEY", required=True)
+    # Bing cookie for using Bing image search
+    configs.chat_config.bing_cookie.from_env("BING_COOKIE", required=True)
 
     BotContainer.tg_bot().register_webhook_handler(app, WEBHOOK_PATH)
 

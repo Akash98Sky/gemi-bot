@@ -8,6 +8,6 @@ class Configs(containers.DeclarativeContainer):
     chat_config = providers.Configuration('chat')
 
 class BotContainer(containers.DeclarativeContainer):
-    chat_service = providers.Singleton(ChatService, api_key=Configs.chat_config.api_key)
+    chat_service = providers.Singleton(ChatService, api_key=Configs.chat_config.api_key, bing_cookie=Configs.chat_config.bing_cookie)
     chat_repo = providers.Factory(ChatRepo, service=chat_service)
     tg_bot = providers.Singleton(TgBot, token=Configs.bot_config.token, chat_repo=chat_repo, webhook_host=Configs.bot_config.webhook_host, webhook_secret=Configs.bot_config.webhook_secret)

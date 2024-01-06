@@ -4,13 +4,16 @@ from PIL.Image import Image
 import google.generativeai as genai
 from google.generativeai.generative_models import content_types, generation_types, ChatSession
 from prompts.static import CHAT_INIT_HISTORY
+from re_edge_gpt import ImageGenAsync
 
 class ChatService(object):
     model: genai.GenerativeModel
     vision_model: genai.GenerativeModel
+    image_model: ImageGenAsync
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, bing_cookie: str):
         genai.configure(api_key=api_key)
+        self.image_model = ImageGenAsync(auth_cookie=bing_cookie, quiet=True)
         self.model = genai.GenerativeModel("gemini-pro")
         self.vision_model = genai.GenerativeModel('gemini-pro-vision')
 
@@ -49,3 +52,5 @@ class ChatService(object):
             history.extend(CHAT_INIT_HISTORY)
             return self.model.start_chat(history=history)
 
+    def gen_image_response(self, prompt: str):
+        return self.image_model.get_images(prompt, max_generate_time_sec=30)

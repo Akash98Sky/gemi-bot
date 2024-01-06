@@ -3,13 +3,13 @@ from PIL.Image import Image
 from typing import Any, Dict, Union
 from aiogram import Router
 from aiogram.filters import CommandStart
-from aiogram.types import Message
+from aiogram.types import Message, InputMediaPhoto
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.utils.markdown import bold, italic
 
 from bot.middlewares import PromptGenMiddleware
-from chat.repository import ChatRepo
+from chat.repository import Chat, ChatRepo
 
 # All handlers should be attached to the Router (or Dispatcher)
 command_router = Router(name='/')
@@ -49,15 +49,22 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
         else:
             sent = await message.reply(text=italic('Thinking...'))
 
-        chat = await repo.get_chat_session(message.chat.id)
+        chat: Chat = await repo.get_chat_session(message.chat.id)
         
         response = ""
         error: TelegramBadRequest | None = None
         async for reply in chat.send_message_async(prompts):
-            response = response + reply
             try:
-                error = None
-                sent = await sent.edit_text(text=response, parse_mode=ParseMode.MARKDOWN)
+                if isinstance(reply, list):
+                    if sent:
+                        await sent.delete()
+                        sent = None
+                    await message.reply_media_group(media=reply)
+                elif sent:
+                    response = response + reply
+                    error = None
+                    if sent:
+                        sent = await sent.edit_text(text=response, parse_mode=ParseMode.MARKDOWN)
             except TelegramBadRequest as e:
                 error = e
                 # Ignore intermediate errors
