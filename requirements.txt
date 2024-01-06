@@ -6,3 +6,4 @@ pillow~=10.1.0
 pypdfium2~=4.25.0
 duckduckgo-search~=4.1.1
 sentry_sdk~=1.39.1
+re_edge_gpt~=0.0.20
