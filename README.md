@@ -20,8 +20,8 @@ To get started with Gemi chat bot, follow these steps:
 - Python 3.8+
 - A Telegram bot token from [BotFather](https://t.me/BotFather)
 - API keys for `gemini-pro` from [here](https://makersuite.google.com/app/apikey)
-- Auth cookies of `Bing AI` from [here](https://github.com/Integration-Automation/ReEdgeGPT?tab=readme-ov-file#getting-authentication)
-- A configured webhook host
+- Auth cookies of `Bing AI` from [here](https://github.com/Integration-Automation/ReEdgeGPT?tab=readme-ov-file#getting-authentication), used for image generation (optional)
+- A configured webhook host. For localhost, follow [this](#webhook-on-localhost). (optional)
 
 ### Installation
 
@@ -56,7 +56,25 @@ Use gunicorn to launch the application:
 gunicorn main:web_app --bind 0.0.0.0:8080 -k aiohttp.GunicornWebWorker
 ```
 
-Replace 8080 with the port you want to run your web server on, and -w 4 with the number of worker processes you need.
+Replace 8080 with the port you want to run your web server on.
+
+### Webhook on localhost
+- Have `ngrok` installed on your local machine. If you don't have it installed, download it from [ngrok's website](https://ngrok.com/) and follow their installation instructions.
+- Ensure your local server is ready to receive webhooks.
+
+- Steps
+
+    1. **Start Your Local Server**
+    Ensure that your local server is running on a specific port. For example, if you're using a Node.js Express server, it might be running on port 3000.
+
+    2. **Run Ngrok**
+    Open a new terminal window and run ngrok to expose your local server to the internet. Replace `8080` with the port number your local server is using.
+
+    ```bash
+    ngrok http 3000
+    ```
+
+    3. Copy the Ngrok URL Once ngrok is running, it will display a public URL (e.g., https://abc123.ngrok.io). Copy this URL; it will be used as your webhook endpoint.
 
 ### Documentation
 For more details on how to use and extend the bot, refer to the inline documentation within the code and the official [aiogram](https://docs.aiogram.dev/en/latest/) and [google-generativeai](https://ai.google.dev/tutorials/python_quickstart) libraries documentation.
