@@ -61,8 +61,10 @@ class ChatService(object):
             logging.exception(e)
             if chat:
                 chat.rewind()
+        except StopAsyncIteration:
+            # Handle the StopAsyncIteration exception, raised by async generators, here
+            pass
 
-        
     def gen_response_stream(self, prompts: Union[Iterable[Union[str, Image]], str], chat: ChatSession | None = None):
         return self.gen_response(prompts=prompts, chat=chat, stream=True)
 

@@ -82,7 +82,7 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
         # Ignore intermediate errors
         logging.warn(f'Failed to reply message: {message.text}, TelegramBadRequest: {e}')
         if sent != None:
-            sent.edit_text(text=italic('Failed to reply, try again...'))
+            await sent.edit_text(text=italic('Failed to reply, try again...'))
         else:
             await message.reply(text=italic('Failed to reply, try again...'))
     except Exception as e:
