@@ -11,11 +11,12 @@ logging: Logger = getLogger(__name__)
 class ChatService(object):
     model: genai.GenerativeModel
     vision_model: genai.GenerativeModel
-    image_model: ImageGenAsync
+    image_model: ImageGenAsync | None = None
 
-    def __init__(self, api_key: str, bing_cookie: str):
+    def __init__(self, api_key: str, bing_cookie: str | None = None):
         genai.configure(api_key=api_key)
-        self.image_model = ImageGenAsync(auth_cookie=bing_cookie, quiet=True)
+        if bing_cookie and len(bing_cookie) > 0:
+            self.image_model = ImageGenAsync(auth_cookie=bing_cookie, quiet=True)
         self.model = genai.GenerativeModel("gemini-pro")
         self.vision_model = genai.GenerativeModel('gemini-pro-vision')
 
@@ -76,4 +77,6 @@ class ChatService(object):
             return self.model.start_chat(history=history)
 
     def gen_image_response(self, prompt: str):
+        if not self.image_model:
+            raise NotImplemented("Image generation is not enabled.")
         return self.image_model.get_images(prompt, max_generate_time_sec=30)

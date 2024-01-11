@@ -18,10 +18,11 @@ def debugger_is_active() -> bool:
 
 def log_integration():
     logging.basicConfig(level=logging.DEBUG if debugger_is_active() else logging.INFO)
-    if  not debugger_is_active():
+    sentry_dsn = getenv("SENTRY_DSN", "")
+    if not debugger_is_active() and len(sentry_dsn) > 0:
         logging.info("Setting up Sentry")        
         sentry_sdk.init(
-            dsn=getenv("SENTRY_DSN"),
+            dsn=sentry_dsn,
             # Set traces_sample_rate to 1.0 to capture 100%
             # of transactions for performance monitoring.
             traces_sample_rate=1.0,
@@ -43,14 +44,14 @@ def init_bot(app: Application):
     # Bot token can be obtained via https://t.me/BotFather
     configs.bot_config.token.from_env("BOT_TOKEN", required=True)
     # Base URL for webhook will be used to generate webhook URL for Telegram
-    configs.bot_config.webhook_host.from_env("DETA_SPACE_APP_HOSTNAME", required=True)
+    configs.bot_config.webhook_host.from_env("APP_HOSTNAME", required=True)
     # Secret key to validate requests from Telegram (optional)
     configs.bot_config.webhook_secret.from_env("WEBHOOK_SECRET", default='')
 
     # API key can be obtained via https://platform.openai.com/account/api-keys
     configs.chat_config.api_key.from_env("GOOGLE_API_KEY", required=True)
     # Bing cookie for using Bing image search
-    configs.chat_config.bing_cookie.from_env("BING_COOKIE", required=True)
+    configs.chat_config.bing_cookie.from_env("BING_COOKIE")
 
     BotContainer.tg_bot().register_webhook_handler(app, WEBHOOK_PATH)
 

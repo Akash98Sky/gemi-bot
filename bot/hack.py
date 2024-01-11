@@ -13,31 +13,33 @@ from utils.aiotimer import Timer
 logging: Logger = getLogger(__name__)
 
 MSG_HANDLING_CONCURRENCY = int(getenv('MSG_HANDLING_CONCURRENCY', '20'))
-INACTIVITY_SLEEP_DELAY = int(getenv('INACTIVITY_SLEEP_DELAY', '60'))
+INACTIVITY_SLEEP_DELAY = int(getenv('INACTIVITY_SLEEP_DELAY', '-1'))
 
 class HackyMiddleware(BaseMiddleware):
     """A cool hacky way to keep instance active using webhooks but using polling for message handling.
         
         As it is not possible to use webhooks with polling and webhooks gives incosistent results.
     """
-    timer: Timer
+    timer: Timer | None
     bot: Any
     bot_sleep_sem = asyncio.BoundedSemaphore()
     bot_activity_sem = asyncio.BoundedSemaphore(MSG_HANDLING_CONCURRENCY)
     timer_create_sem = asyncio.BoundedSemaphore()
+    sleep_enabled = False
 
     def __init__(self, tg_bot: Any):
         super(HackyMiddleware, self).__init__()
         self.bot = tg_bot
-        
-        logging.info('Inactivity sleep timer set to %d seconds', INACTIVITY_SLEEP_DELAY)
+        self.sleep_enabled = INACTIVITY_SLEEP_DELAY > 0
+        if self.sleep_enabled:
+            logging.info('Inactivity sleep timer set to %d seconds', INACTIVITY_SLEEP_DELAY)
         logging.info('Message handling concurrency set to %d', MSG_HANDLING_CONCURRENCY)
 
     def __awake(self) -> bool:
         return self.bot.method == BotEventMethods.polling
 
     async def create_sleep_timer(self, delay: int = INACTIVITY_SLEEP_DELAY):
-        while True:
+        while self.sleep_enabled:
             try:
                 async with self.timer_create_sem:
                     # timer is scheduled here
@@ -52,6 +54,11 @@ class HackyMiddleware(BaseMiddleware):
 
             if not self.__awake():
                 break
+
+    def cancel_sleep_timer(self):
+        if self.timer is not None:
+            self.timer.cancel()
+            self.timer = None
 
     async def goto_sleep(self):
         async with self.bot_sleep_sem:
@@ -77,7 +84,7 @@ class HackyMiddleware(BaseMiddleware):
         if self.__awake():
             logging.debug('HackyMiddleware closing...')
             await self.goto_sleep()
-            self.timer.cancel()
+            self.cancel_sleep_timer()
 
     async def __call__(
         self,
@@ -87,9 +94,9 @@ class HackyMiddleware(BaseMiddleware):
     ) -> Any:
         try:
             # acquire lock to hold the sleep timer
-            if self.bot_activity_sem._bound_value == self.bot_activity_sem._value:
+            if self.sleep_enabled and self.bot_activity_sem._bound_value == self.bot_activity_sem._value:
                 await self.timer_create_sem.acquire()
-                self.timer.cancel()
+                self.cancel_sleep_timer()
 
             async with self.bot_activity_sem:
                 if not self.__awake():
@@ -99,5 +106,5 @@ class HackyMiddleware(BaseMiddleware):
                     return await handler(event, data)
         finally:
             # release lock if there is no more activity
-            if self.bot_activity_sem._bound_value == self.bot_activity_sem._value:
+            if self.sleep_enabled and self.bot_activity_sem._bound_value == self.bot_activity_sem._value:
                 self.timer_create_sem.release()
