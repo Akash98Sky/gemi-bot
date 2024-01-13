@@ -3,8 +3,7 @@ from PIL.Image import Image
 from typing import Any, Dict, Union
 from aiogram import Router
 from aiogram.filters import CommandStart
-from aiogram.types import Message
-from aiogram.enums import ParseMode
+from aiogram.types import Message, InputMediaAudio
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.utils.markdown import bold, italic, pre
 
@@ -63,6 +62,11 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
                         await sent.delete()
                         sent = None
                     await message.reply_media_group(media=reply)
+                elif isinstance(reply, InputMediaAudio):
+                    if sent:
+                        await sent.delete()
+                        sent = None
+                    await message.reply_voice(voice=reply.media)
                 elif sent:
                     response = response + reply
                     error = None

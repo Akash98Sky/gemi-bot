@@ -1,21 +1,31 @@
 import asyncio
 from logging import Logger, getLogger
-import aiohttp
-from aiogram.types import InputMediaPhoto, BufferedInputFile
+import pyttsx3
+from aiogram.types import InputMediaPhoto, InputMediaAudio, FSInputFile
 from duckduckgo_search import AsyncDDGS
 from google.generativeai.generative_models import ChatSession, content_types
+import time
 
 from chat.service import ChatService
-from prompts.keywords import IMAGE_QUERY, SEARCH_QUERIES
+from prompts.keywords import IMAGE_QUERY, SEARCH_QUERIES, VOICE_RESPONSE
 from prompts.templates import build_searchengine_response_prompt
 
 logging: Logger = getLogger(__name__)
 
 class QueryProcessor():
     __service: ChatService
+    __voice_engine: pyttsx3.Engine
+    __query_list__ = [
+        IMAGE_QUERY,
+        SEARCH_QUERIES,
+        VOICE_RESPONSE
+    ]
 
     def __init__(self, service: ChatService):
         self.__service = service
+        self.__voice_engine = pyttsx3.init()
+        self.__voice_engine.setProperty('voice', self.__voice_engine.getProperty('voices')[1].id)
+        self.__voice_engine.setProperty('rate', 140)
 
     async def __process_searchengine_query__(self, query: str):
         async with AsyncDDGS() as ddgs:
@@ -48,7 +58,14 @@ class QueryProcessor():
         
         return images
     
-    async def process_response(self, session: ChatSession, messages: list[content_types.PartType]):
+    async def __gen_voice_data__(self, query: str, chat_id: int):
+        logging.debug(f"Generate voice query: {query}")
+        file_path = f"temp/voice_{chat_id}_{int(time.time())}.mp3"
+        self.__voice_engine.save_to_file(query, file_path)
+        self.__voice_engine.runAndWait()
+        return InputMediaAudio(media=FSInputFile(file_path))
+    
+    async def process_response(self, session: ChatSession, messages: list[content_types.PartType], chat_id: int):
         text = ""
         has_query = False
         response_stream = self.__service.gen_response_stream(prompts=messages, chat=session)
@@ -56,7 +73,7 @@ class QueryProcessor():
         async for res in response_stream:
             text += res
             if len(text) > 15:
-                if text.startswith(f"{SEARCH_QUERIES}:") or text.startswith(f"{IMAGE_QUERY}:"):
+                if len([query for query in self.__query_list__ if text.startswith(f"{query}:")]) > 0:
                     has_query = True
                 else:
                     yield text
@@ -69,9 +86,12 @@ class QueryProcessor():
             if text.startswith(f"{IMAGE_QUERY}:"):
                 query = text.replace(f"{IMAGE_QUERY}:", "").strip()
                 yield await self.__gen_image_data__(query)
+            elif text.startswith(f"{VOICE_RESPONSE}:"):
+                query = text.replace(f"{VOICE_RESPONSE}:", "").strip()
+                yield await self.__gen_voice_data__(query, chat_id)
             else:
                 queries = text.replace(f"{SEARCH_QUERIES}:\n-", "").split("\n-")
                 query_responses_prompt = await self.__gen_live_data_prompt__(queries)
-                response_stream = self.process_response(session=session, messages=[query_responses_prompt])
+                response_stream = self.process_response(session=session, messages=[query_responses_prompt], chat_id=chat_id)
                 async for res in response_stream:
                     yield res

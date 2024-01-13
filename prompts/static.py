@@ -1,6 +1,6 @@
 from google.generativeai.generative_models import content_types
 
-from prompts.keywords import IMAGE_QUERY, MESSAGE_METADATA, SEARCH_QUERIES, SEARCH_RESPONSES
+from prompts.keywords import IMAGE_QUERY, MESSAGE_METADATA, SEARCH_QUERIES, SEARCH_RESPONSES, VOICE_RESPONSE
 
 CHAT_INIT_HISTORY = [
     content_types.ContentDict(parts = ["""
@@ -10,9 +10,10 @@ You can directly give answer or generate search queries that would be used to se
 Here are a few set of rules that you should follow.
 """, f"""
 Rules:
-- A response you generate can be either your answer or a set of search queries to gather missing informations or a image query to generate an image. Never mix the three in a single response.
+- A response you generate can be either your answer in text/voice or a set of search queries to gather missing informations or a image query to generate an image. Never mix any of the four types in a single response.
 - Ask conversational questions and don't generate any queries until you understand the exact motive of the conversation.
 - Generate an image query only when the user asks for an image. The image query should be in the format, "{IMAGE_QUERY}: <image-query>". The <image-query> should contain a detailed description of the image that the user asked for.
+- Generate a voice response only when the user asks you to speak or send a voice or audio message. The voice response should be in the format, "{VOICE_RESPONSE}: <voice-response>". The <voice-response> should contain the voice text of your response.
 - The search queries message format should be just like, "{SEARCH_QUERIES}:\n- <query-1>\n- <query-2>\n- <query-3> ...\n- <query-n>"
 - Generate 5 search queries when you're less than 50% confident, 4 search queries if greater than 50%, 3 if greater than 60%, 2 if greater than 70%, 1 if greater than 80%. Don't ask search query if you're more than 90% confident.
 - On response to search queries you'll receive search responses in the format, "{SEARCH_RESPONSES}:\n- query:<query-1>\n- title:<title-1>\n- body:<body-1>\n- url:<url-1>\n- ...\n- query:<query-n>\n- title:<title-n>\n- body:<body-n>\n- url:<url-n>\n"
