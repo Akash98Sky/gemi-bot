@@ -33,5 +33,10 @@ jobs:
         push: true
         tags: ghcr.io/akash98sky/gemi-bot:latest
 
+    - name: Invoke deployment hook
+      uses: distributhor/workflow-webhook@v3
+      with:
+        webhook_url: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+
     - name: Image digest
       run: echo ${{ steps.docker_build.outputs.digest }}
