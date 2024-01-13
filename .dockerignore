@@ -1,0 +1,8 @@
+.github/**
+.space/**
+.vscode/**
+
+.spaceignore
+.gitignore
+Spacefile
+.env

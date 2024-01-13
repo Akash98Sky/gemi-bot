@@ -24,8 +24,8 @@ class QueryProcessor():
     def __init__(self, service: ChatService):
         self.__service = service
         self.__voice_engine = pyttsx3.init()
-        self.__voice_engine.setProperty('voice', self.__voice_engine.getProperty('voices')[1].id)
-        self.__voice_engine.setProperty('rate', 140)
+        self.__voice_engine.setProperty('voice', 'mb-us1')
+        self.__voice_engine.setProperty('rate', 100)
 
     async def __process_searchengine_query__(self, query: str):
         async with AsyncDDGS() as ddgs:
