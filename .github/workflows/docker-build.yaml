@@ -31,7 +31,7 @@ jobs:
         context: .
         file: Dockerfile
         push: true
-        tags: ghcr.io/Akash98Sky/gemi-bot:latest
+        tags: ghcr.io/akash98sky/gemi-bot:latest
 
     - name: Image digest
       run: echo ${{ steps.docker_build.outputs.digest }}
