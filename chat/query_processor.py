@@ -1,12 +1,12 @@
 import asyncio
 from logging import Logger, getLogger
-import pyttsx3
-from aiogram.types import InputMediaPhoto, InputMediaAudio, FSInputFile
+from aiogram.types import InputMediaPhoto, InputMediaAudio, URLInputFile
 from duckduckgo_search import AsyncDDGS
 from google.generativeai.generative_models import ChatSession, content_types
 import time
 
 from chat.service import ChatService
+from chat.voice_engine import VoiceEngine
 from prompts.keywords import IMAGE_QUERY, SEARCH_QUERIES, VOICE_RESPONSE
 from prompts.templates import build_searchengine_response_prompt
 
@@ -14,18 +14,16 @@ logging: Logger = getLogger(__name__)
 
 class QueryProcessor():
     __service: ChatService
-    __voice_engine: pyttsx3.Engine
+    __voice_engine: VoiceEngine
     __query_list__ = [
         IMAGE_QUERY,
         SEARCH_QUERIES,
         VOICE_RESPONSE
     ]
 
-    def __init__(self, service: ChatService):
+    def __init__(self, service: ChatService, voice: VoiceEngine):
         self.__service = service
-        self.__voice_engine = pyttsx3.init()
-        self.__voice_engine.setProperty('voice', self.__voice_engine.getProperty('voices')[1].id)
-        self.__voice_engine.setProperty('rate', 140)
+        self.__voice_engine = voice
 
     async def __process_searchengine_query__(self, query: str):
         async with AsyncDDGS() as ddgs:
@@ -60,10 +58,9 @@ class QueryProcessor():
     
     async def __gen_voice_data__(self, query: str, chat_id: int):
         logging.debug(f"Generate voice query: {query}")
-        file_path = f"temp/voice_{chat_id}_{int(time.time())}.mp3"
-        self.__voice_engine.save_to_file(query, file_path)
-        self.__voice_engine.runAndWait()
-        return InputMediaAudio(media=FSInputFile(file_path))
+        file_name = f"voice_{chat_id}_{int(time.time())}.wav"
+        text_voice_url = await self.__voice_engine.text_to_wave(query)
+        return InputMediaAudio(media=URLInputFile(url=text_voice_url, filename=file_name))
     
     async def process_response(self, session: ChatSession, messages: list[content_types.PartType], chat_id: int):
         text = ""

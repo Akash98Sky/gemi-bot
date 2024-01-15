@@ -8,4 +8,3 @@ duckduckgo-search~=4.1.1
 sentry_sdk~=1.39.1
 re_edge_gpt~=0.0.20
 md2tgmd @ git+https://github.com/yym68686/md2tgmd.git
-pyttsx3~=2.90
