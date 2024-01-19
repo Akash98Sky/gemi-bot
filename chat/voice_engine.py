@@ -3,6 +3,8 @@ from aiohttp import ClientSession
 from logging import getLogger
 from urllib.parse import urlencode
 
+from chat.exceptions import UnsupportedException
+
 logging = getLogger(__name__)
 
 class VoiceEngine:
@@ -28,16 +30,18 @@ class VoiceEngine:
                         if response.status == 200:
                             break
                 except Exception as e:
-                    logging.warning(f"OpenTTS engine is not up yet: {e}")
+                    logging.warning(f"Voice engine is not up yet: {e}")
 
-                logging.info("OpenTTS engine is not up yet, sleeping for 10 seconds")
+                logging.info("Voice engine is not up yet, sleeping for 10 seconds")
                 await asyncio.sleep(10)
-        logging.info("OpenTTS engine is up")
+        logging.info("Voice engine is up...")
 
     async def text_to_wave(self, text: str):
         if not self.__client_session:
-            raise NotImplemented("OpenTTS engine is not enabled.")
+            raise UnsupportedException("Voice engine is not enabled.")
         
         async with self.__engine_busy_sem:
-            params={'text': text, 'voice_id': self.__voice}
-            return f'{self.__voice_api_url}/api/speak/{self.__tts}?{urlencode(params)}'
+            async with self.__client_session.get(f'/api/speak/{self.__tts}', params={'text': text, 'voice_id': self.__voice}) as response:
+                if response.status == 200:
+                    return await response.read()
+                logging.error(f"Voice engine returned error status: {response.status}")

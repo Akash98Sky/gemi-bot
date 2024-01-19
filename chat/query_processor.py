@@ -1,6 +1,6 @@
 import asyncio
 from logging import Logger, getLogger
-from aiogram.types import InputMediaPhoto, InputMediaAudio, URLInputFile
+from aiogram.types import InputMediaPhoto, InputMediaAudio, BufferedInputFile
 from duckduckgo_search import AsyncDDGS
 from google.generativeai.generative_models import ChatSession, content_types
 import time
@@ -59,8 +59,8 @@ class QueryProcessor():
     async def __gen_voice_data__(self, query: str, chat_id: int):
         logging.debug(f"Generate voice query: {query}")
         file_name = f"voice_{chat_id}_{int(time.time())}.wav"
-        text_voice_url = await self.__voice_engine.text_to_wave(query)
-        return InputMediaAudio(media=URLInputFile(url=text_voice_url, filename=file_name))
+        text_voice_bytes = await self.__voice_engine.text_to_wave(query)
+        return InputMediaAudio(media=BufferedInputFile(text_voice_bytes, filename=file_name))
     
     async def process_response(self, session: ChatSession, messages: list[content_types.PartType], chat_id: int):
         text = ""
