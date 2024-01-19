@@ -10,7 +10,7 @@ async def root(request: Request):
     q = request.query.get('q', None)
     if q is None or q.isspace():
         return json_response({ "message": "Hello World" })
-    res = await BotContainer.chat_service().gen_response(q)
+    res = ''.join([r async for r in BotContainer.chat_service().gen_response(q)])
     return json_response({"message": q, "reply": res})
 
 @routes.get("/ping")

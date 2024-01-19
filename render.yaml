@@ -12,8 +12,6 @@ services:
         sync: false
       - key: BOT_TOKEN
         sync: false
-      - key: REDIS_URL
-        sync: false
       - key: WEBHOOK_SECRET
         sync: false
       - key: GOOGLE_API_KEY
