@@ -3,6 +3,7 @@ from typing import Iterable, Union
 from PIL.Image import Image
 import google.generativeai as genai
 from google.generativeai.generative_models import content_types, generation_types, ChatSession
+from chat.exceptions import UnsupportedException
 from prompts.static import CHAT_INIT_HISTORY
 from re_edge_gpt import ImageGenAsync
 
@@ -78,5 +79,5 @@ class ChatService(object):
 
     def gen_image_response(self, prompt: str):
         if not self.image_model:
-            raise NotImplemented("Image generation is not enabled.")
+            raise UnsupportedException("Image generation is not enabled.")
         return self.image_model.get_images(prompt, max_generate_time_sec=30)
