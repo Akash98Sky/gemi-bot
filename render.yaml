@@ -1,10 +1,10 @@
 services:
   - type: web
     name: gemi-bot
-    runtime: python
+    runtime: docker
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn main:web_app --bind 0.0.0.0:$PORT -k aiohttp.GunicornWebWorker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: gunicorn main:web_app --bind 0.0.0.0:$PORT -k aiohttp.GunicornWebWorker
     envVars:
       - key: ENV
         sync: false
@@ -16,14 +16,6 @@ services:
         sync: false
       - key: GOOGLE_API_KEY
         sync: false
-      - key: SENTRY_DSN
-        sync: false
-      - key: BING_COOKIE
-        sync: false
-      - key: VOICE_API_URL
-        sync: false
-      - key: TTS_VOICE
-        value: flite:cmu_us_slt
       - key: MSG_HANDLING_CONCURRENCY
         value: 10
       - key: INACTIVITY_SLEEP_DELAY

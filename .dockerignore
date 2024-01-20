@@ -1,0 +1,9 @@
+.github/**
+.vscode/**
+
+__pycache__/
+__pypackages__/
+
+.gitignore
+.env
+render.yaml
