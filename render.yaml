@@ -2,6 +2,7 @@ services:
   - type: web
     name: gemi-bot
     runtime: docker
+    region: singapore
     plan: free
     dockerfilePath: ./Dockerfile
     dockerCommand: gunicorn main:web_app --bind 0.0.0.0:$PORT -k aiohttp.GunicornWebWorker
@@ -25,6 +26,7 @@ services:
   - type: web
     name: gemi-voice
     runtime: docker
+    region: singapore
     plan: free
     repo: https://github.com/Akash98Sky/gemi-voice.git
     dockerfilePath: ./Dockerfile

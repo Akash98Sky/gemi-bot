@@ -3,6 +3,7 @@
 
 __pycache__/
 __pypackages__/
+venv/
 
 .gitignore
 .env
