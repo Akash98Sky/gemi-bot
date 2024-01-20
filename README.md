@@ -11,6 +11,15 @@ Gemi is a Telegram chat bot that leverages the `gemini-pro` API for text-based m
 - Built-in logging and error tracking via Sentry.
 - Extendable with middleware and custom route handlers.
 
+## One-Click Deployment
+Use the button below to deploy your own Gemi bot on Render.
+
+<a href="https://render.com/deploy?repo=https://github.com/Akash98Sky/gemi-bot/tree/main">
+  <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render">
+</a>
+
+Note: You need a Render account to use this. Or, create your free account [here](https://dashboard.render.com/register).
+
 ## Quick Start
 
 To get started with Gemi chat bot, follow these steps:
