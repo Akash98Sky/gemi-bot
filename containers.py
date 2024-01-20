@@ -10,7 +10,7 @@ class Configs(containers.DeclarativeContainer):
     chat_config = providers.Configuration('chat')
 
 class BotContainer(containers.DeclarativeContainer):
-    chat_service = providers.Singleton(ChatService, api_key=Configs.chat_config.api_key, bing_cookie=Configs.chat_config.bing_cookie)
+    chat_service = providers.Singleton(ChatService, api_key=Configs.chat_config.api_key, bing_cookie=Configs.chat_config.bing_cookie, proxy=Configs.chat_config.proxy_url)
     voice_engine = providers.Singleton(VoiceEngine, voice_api_url=Configs.chat_config.voice_api_url, tts_voice=Configs.chat_config.tts_voice)
     query_processor = providers.Singleton(QueryProcessor, service=chat_service, voice=voice_engine)
     chat_repo = providers.Factory(ChatRepo, service=chat_service, processor=query_processor)

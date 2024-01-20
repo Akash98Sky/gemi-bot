@@ -14,10 +14,10 @@ class ChatService(object):
     vision_model: genai.GenerativeModel
     image_model: ImageGenAsync | None = None
 
-    def __init__(self, api_key: str, bing_cookie: str | None = None):
+    def __init__(self, api_key: str, bing_cookie: str | None = None, proxy: str | None = None):
         genai.configure(api_key=api_key)
         if bing_cookie and len(bing_cookie) > 0:
-            self.image_model = ImageGenAsync(auth_cookie=bing_cookie, quiet=True)
+            self.image_model = ImageGenAsync(auth_cookie=bing_cookie, quiet=True, proxy=proxy)
         self.model = genai.GenerativeModel("gemini-pro")
         self.vision_model = genai.GenerativeModel('gemini-pro-vision')
 

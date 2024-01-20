@@ -56,6 +56,8 @@ def init_bot(app: Application):
     configs.chat_config.voice_api_url.from_env("VOICE_API_URL")
     # Voice engine
     configs.chat_config.tts_voice.from_env("TTS_VOICE", default="flite:cmu_us_slt")
+    # Proxy URL
+    configs.chat_config.proxy_url.from_env("PROXY_URL")
 
     BotContainer.tg_bot().register_webhook_handler(app, WEBHOOK_PATH)
 
