@@ -56,7 +56,7 @@ class HackyMiddleware(BaseMiddleware):
                 break
 
     def cancel_sleep_timer(self):
-        if self.timer is not None:
+        if self.sleep_enabled and self.timer:
             self.timer.cancel()
             self.timer = None
 
