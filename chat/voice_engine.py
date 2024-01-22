@@ -1,7 +1,8 @@
 import asyncio
+from contextlib import suppress
+import signal
 from aiohttp import ClientSession
 from logging import getLogger
-from urllib.parse import urlencode
 
 from chat.exceptions import UnsupportedException
 
@@ -21,6 +22,16 @@ class VoiceEngine:
         self.__voice_api_url = voice_api_url
         self.__client_session = ClientSession(base_url=voice_api_url)
         asyncio.create_task(self.__bring_up_engine__())
+        loop = asyncio.get_running_loop()
+        with suppress(NotImplementedError):  # pragma: no cover
+            # Signals handling is not supported on Windows
+            # It also can't be covered on Windows
+            loop.add_signal_handler(
+                signal.SIGTERM, self.__close_client
+            )
+            loop.add_signal_handler(
+                signal.SIGINT, self.__close_client
+            )
 
     async def __bring_up_engine__(self):
         async with self.__engine_busy_sem:
@@ -35,6 +46,12 @@ class VoiceEngine:
                 logging.info("Voice engine is not up yet, sleeping for 10 seconds")
                 await asyncio.sleep(10)
         logging.info("Voice engine is up...")
+
+    def __close_client(self):
+        if self.__client_session:
+            asyncio.create_task(self.__client_session.connector.close())
+            asyncio.create_task(self.__client_session.close())
+            self.__client_session = None
 
     async def text_to_wave(self, text: str):
         if not self.__client_session:

@@ -2,7 +2,6 @@ import asyncio
 from logging import Logger, getLogger
 from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware
-from aiogram.dispatcher.event.bases import CancelHandler
 from aiogram.types import Message
 from aiohttp.web import Response
 from os import getenv
