@@ -58,7 +58,7 @@ class VoiceEngine:
             raise UnsupportedException("Voice engine is not enabled.")
         
         async with self.__engine_busy_sem:
-            async with self.__client_session.get(f'/api/speak/{self.__tts}', params={'text': text, 'voice_id': self.__voice}) as response:
+            async with self.__client_session.get(f'/api/speak/{self.__tts}', params={'text': text.encode('latin-1', 'ignore').decode('latin-1'), 'voice_id': self.__voice}) as response:
                 if response.status == 200:
                     return await response.read()
                 logging.error(f"Voice engine returned error status: {response.status}")
