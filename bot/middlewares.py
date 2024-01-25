@@ -2,13 +2,14 @@ import asyncio
 from logging import Logger, getLogger
 from typing import Any, Awaitable, Callable, Dict, Union
 from aiogram import BaseMiddleware, Bot
-from aiogram.types import Message, Document, PhotoSize
+from aiogram.types import Message, Document, PhotoSize, Audio, Voice
 from aiogram.utils.markdown import italic
 from io import BytesIO
 from PIL.Image import Image, open
 import pypdfium2 as pdfium
 
 from bot.exceptions import FileSizeTooBigException, UnsupportedFileFormatException
+from chat.voice_engine import VoiceEngine
 from prompts.templates import build_msg_metadata_prompt
 from utils.docreader import get_docx_text
 
@@ -33,6 +34,10 @@ class PromptGenMiddleware(BaseMiddleware):
             return img
         else:
             return img.convert('RGB')
+        
+    async def __gen_voice_prompt__(self, voice: Union[Audio, Voice], voice_engine: VoiceEngine, bot: Bot):
+        with await bot.download(voice.file_id, BytesIO()) as binfile:
+            return await voice_engine.voice_to_text(binfile.read(), voice.mime_type)
         
     async def __gen_pdf_prompt__(self, document: Document, bot: Bot):
         # if greater than 20 MB raise exception
@@ -67,7 +72,7 @@ class PromptGenMiddleware(BaseMiddleware):
             text += get_docx_text(binfile)
         return text
 
-    async def __msg_to_prompt__(self, msg: Message, exclude_caption: bool = False, exclude_metadata: bool = False):
+    async def __msg_to_prompt__(self, msg: Message, voice_engine: VoiceEngine, exclude_caption: bool = False, exclude_metadata: bool = False):
         prompts: list[Union[str, Image]] = []
         meta_dict: dict[str, str] = {
             'timestamp': str(msg.date),
@@ -81,6 +86,10 @@ class PromptGenMiddleware(BaseMiddleware):
                 prompts.append(msg.caption)
             
             prompts.append(await self.__gen_img_prompt__(msg.photo, bot=msg.bot))
+        elif (msg.voice):
+            prompts.append(await self.__gen_voice_prompt__(msg.voice, voice_engine, bot=msg.bot))
+        elif (msg.audio):
+            prompts.append(await self.__gen_voice_prompt__(msg.audio, voice_engine, bot=msg.bot))
         elif (msg.sticker):
             if (msg.sticker.thumbnail):
                 prompts.append(await self.__gen_img_prompt__([msg.sticker.thumbnail], bot=msg.bot))
@@ -110,17 +119,18 @@ class PromptGenMiddleware(BaseMiddleware):
         data: Dict[str, Any]
     ) -> Any:
         sent = None
+        voice_engine = data['voice_engine']
         try:
             sent = await event.reply(italic('Downloading message...'))
             prompts: list[Union[str, Image]] = []
             tasks: list[asyncio.Task] = []
 
-            tasks.append(asyncio.create_task(self.__msg_to_prompt__(event)))
+            tasks.append(asyncio.create_task(self.__msg_to_prompt__(event, voice_engine)))
             tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))
 
             reply_of = event.reply_to_message
             if (reply_of):
-                tasks.append(asyncio.create_task(self.__msg_to_prompt__(reply_of, exclude_caption=True, exclude_metadata=True)))
+                tasks.append(asyncio.create_task(self.__msg_to_prompt__(reply_of, voice_engine, exclude_caption=True, exclude_metadata=True)))
                 tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))
 
             await asyncio.gather(*tasks)

@@ -56,6 +56,8 @@ def init_bot(app: Application):
     configs.chat_config.voice_api_url.from_env("VOICE_API_URL")
     # Voice engine
     configs.chat_config.tts_voice.from_env("TTS_VOICE", default="flite:cmu_us_slt")
+    # Speech to text engine
+    configs.chat_config.stt_engine.from_env("STT_ENGINE", default="vosk")
     # Proxy URL
     configs.chat_config.proxy_url.from_env("PROXY_URL")
 

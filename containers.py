@@ -11,7 +11,7 @@ class Configs(containers.DeclarativeContainer):
 
 class BotContainer(containers.DeclarativeContainer):
     chat_service = providers.Singleton(ChatService, api_key=Configs.chat_config.api_key, bing_cookie=Configs.chat_config.bing_cookie, proxy=Configs.chat_config.proxy_url)
-    voice_engine = providers.Singleton(VoiceEngine, voice_api_url=Configs.chat_config.voice_api_url, tts_voice=Configs.chat_config.tts_voice)
+    voice_engine = providers.Singleton(VoiceEngine, voice_api_url=Configs.chat_config.voice_api_url, tts_voice=Configs.chat_config.tts_voice, stt_engine=Configs.chat_config.stt_engine)
     query_processor = providers.Singleton(QueryProcessor, service=chat_service, voice=voice_engine)
     chat_repo = providers.Factory(ChatRepo, service=chat_service, processor=query_processor)
-    tg_bot = providers.Singleton(TgBot, token=Configs.bot_config.token, chat_repo=chat_repo, webhook_host=Configs.bot_config.webhook_host, webhook_secret=Configs.bot_config.webhook_secret)
+    tg_bot = providers.Singleton(TgBot, token=Configs.bot_config.token, chat_repo=chat_repo, voice_engine=voice_engine, webhook_host=Configs.bot_config.webhook_host, webhook_secret=Configs.bot_config.webhook_secret)
