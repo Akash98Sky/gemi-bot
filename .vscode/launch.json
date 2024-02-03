@@ -5,8 +5,8 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Debug",
-            "type": "python",
+            "name": "Python Debugger: Gemi",
+            "type": "debugpy",
             "request": "launch",
             "program": "main.py",
             "justMyCode": true,
