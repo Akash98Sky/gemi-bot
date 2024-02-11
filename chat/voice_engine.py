@@ -51,7 +51,6 @@ class VoiceEngine:
 
     def __close_client(self):
         if self.__client_session:
-            asyncio.create_task(self.__client_session.connector.close())
             asyncio.create_task(self.__client_session.close())
             self.__client_session = None
 
