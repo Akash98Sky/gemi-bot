@@ -54,8 +54,10 @@ Create a .env file at the root of the project directory with the following envir
 BOT_TOKEN=<your_telegram_bot_token>
 GOOGLE_API_KEY=<your_gemini_pro_api_key>
 BING_COOKIE=<your_bing_auth_cookie>
+
+# Webhook settings to wake up the bot (optional) - required only if your service spins down while idle (e.g.: Heroku, Render)
 APP_HOSTNAME=<your_webhook_host> (e.g.: abc.xyz.com)
-WEBHOOK_SECRET=<your_webhook_secret> (optional)
+WEBHOOK_SECRET=<your_webhook_secret>
 
 # Voice API settings
 VOICE_API_URL=<your_voice_api_url>

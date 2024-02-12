@@ -44,7 +44,7 @@ def init_bot(app: Application):
     # Bot token can be obtained via https://t.me/BotFather
     configs.bot_config.token.from_env("BOT_TOKEN", required=True)
     # Base URL for webhook will be used to generate webhook URL for Telegram
-    configs.bot_config.webhook_host.from_env("APP_HOSTNAME", required=True)
+    configs.bot_config.webhook_host.from_env("APP_HOSTNAME")
     # Secret key to validate requests from Telegram (optional)
     configs.bot_config.webhook_secret.from_env("WEBHOOK_SECRET", default='')
 

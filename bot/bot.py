@@ -71,7 +71,11 @@ class TgBot(object):
         webhook_info = await self.bot.get_webhook_info()
         self.method = BotEventMethods.webhook
 
-        if webhook_info.url != webhook_url or drop_pending_updates:
+        if webhook_info.url != webhook_url or drop_pending_updates:    
+            if not self.webhook_host or self.webhook_host.strip() == '':
+                # No webhook url set
+                logging.warning('env APP_HOSTNAME is not set...')
+                return False
             # Drop pending updates so that it does not keep retrying
             # No need to wait longer than 20 secsonds
             return await self.bot.set_webhook(url=webhook_url, secret_token=self.secret, drop_pending_updates=drop_pending_updates)
