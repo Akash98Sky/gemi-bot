@@ -1,8 +1,8 @@
-aiogram>=3.2.0,<3.3
-dependency-injector>=4.41.0,<=4.42
-google-generativeai>=0.3.2,<0.4
+aiogram~=3.2.0
+dependency-injector~=4.41.0
+google-generativeai~=0.3.2
 gunicorn~=21.2.0
-pillow~=10.1.0
+pillow~=10.2.0
 pypdfium2~=4.25.0
 duckduckgo-search~=4.1.1
 sentry_sdk~=1.39.1
