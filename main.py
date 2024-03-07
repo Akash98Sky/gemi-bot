@@ -3,7 +3,8 @@ import sys
 from aiohttp.web import Application, run_app
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration
-from os import getenv
+from os import getenv, path
+from dotenv import load_dotenv
 
 from containers import BotContainer, Configs
 from api.routes import routes
@@ -67,6 +68,8 @@ def init_bot(app: Application):
     BotContainer.voice_engine()
 
 async def web_app():
+    if path.exists(".env"):
+        load_dotenv()
     log_integration()
 
     app = Application()
