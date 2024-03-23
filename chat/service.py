@@ -23,8 +23,11 @@ class ChatService(object):
             'HATE_SPEECH': 'block_none',
             'SEXUAL': 'block_only_high',
         }
-        self.model = genai.GenerativeModel("gemini-pro", safety_settings=safety_settings)
-        self.vision_model = genai.GenerativeModel('gemini-pro-vision', safety_settings=safety_settings)
+        gen_config = generation_types.GenerationConfig(
+            temperature=0.4,
+        )
+        self.model = genai.GenerativeModel("gemini-pro", safety_settings=safety_settings, generation_config=gen_config)
+        self.vision_model = genai.GenerativeModel('gemini-pro-vision', safety_settings=safety_settings, generation_config=gen_config)
 
     def __is_vision_prompt(self, prompts: Union[Iterable[Union[str, Image]], str]):
         if isinstance(prompts, str):
@@ -58,7 +61,7 @@ class ChatService(object):
                 response = await self.model.generate_content_async(contents=prompts, stream=stream)
         
             async for res in response:
-                yield res.text
+                yield ''.join([part.text for part in res.parts])
 
             if is_vision and chat:
                 user_prompt = ''

@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import platform
 import sys
 from aiohttp.web import Application, run_app
 import sentry_sdk
@@ -8,6 +10,9 @@ from dotenv import load_dotenv
 
 from containers import BotContainer, Configs
 from api.routes import routes
+
+if platform.system() == "Windows":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # Path to webhook route, on which Telegram will send requests
 # Also set this as a public path as Telegram servers will request it

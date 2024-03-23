@@ -27,9 +27,9 @@ class QueryProcessor():
 
     async def __process_searchengine_query__(self, query: str):
         async with AsyncDDGS() as ddgs:
-            async for res in ddgs.text(query, region="in-en", max_results=1):
-                res['query'] = query
-                return res
+            res = await ddgs.text(query, region="in-en", max_results=1)
+            res[0]['query'] = query
+            return res[0]
 
     async def __gen_live_data_prompt__(self, queries: list[str]):
         logging.debug(f"Generating live data prompt for queries: {queries}")
