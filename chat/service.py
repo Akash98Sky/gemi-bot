@@ -18,8 +18,13 @@ class ChatService(object):
         genai.configure(api_key=api_key)
         if bing_cookie and len(bing_cookie) > 0:
             self.image_model = ImageGenAsync(auth_cookie=bing_cookie, quiet=True, proxy=proxy)
-        self.model = genai.GenerativeModel("gemini-pro")
-        self.vision_model = genai.GenerativeModel('gemini-pro-vision')
+        safety_settings = {
+            'HARASSMENT': 'block_none',
+            'HATE_SPEECH': 'block_none',
+            'SEXUAL': 'block_only_high',
+        }
+        self.model = genai.GenerativeModel("gemini-pro", safety_settings=safety_settings)
+        self.vision_model = genai.GenerativeModel('gemini-pro-vision', safety_settings=safety_settings)
 
     def __is_vision_prompt(self, prompts: Union[Iterable[Union[str, Image]], str]):
         if isinstance(prompts, str):
@@ -56,7 +61,12 @@ class ChatService(object):
                 yield res.text
 
             if is_vision and chat:
-                user_prompt = '\n'.join([prompt for prompt in prompts if isinstance(prompt, str)])
+                user_prompt = ''
+                for prompt in prompts:
+                    if isinstance(prompt, Image):
+                        user_prompt += f"\n[Image]"
+                    else:
+                        user_prompt += f"\n{prompt}"
                 chat.history.append(self.__to_user_content__(user_prompt))
                 chat.history.append(self.__to_model_content__(response.text))
         except generation_types.BrokenResponseError as e:
