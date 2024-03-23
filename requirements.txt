@@ -4,7 +4,7 @@ google-generativeai~=0.3.2
 gunicorn~=21.2.0
 pillow~=10.2.0
 pypdfium2~=4.25.0
-duckduckgo-search~=4.1.1
+duckduckgo-search~=5.1
 sentry_sdk~=1.39.1
 re_edge_gpt~=0.0.20
 md2tgmd @ git+https://github.com/yym68686/md2tgmd.git
