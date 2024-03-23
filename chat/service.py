@@ -61,7 +61,12 @@ class ChatService(object):
                 yield res.text
 
             if is_vision and chat:
-                user_prompt = '\n'.join([prompt for prompt in prompts if isinstance(prompt, str)])
+                user_prompt = ''
+                for prompt in prompts:
+                    if isinstance(prompt, Image):
+                        user_prompt += f"\n[Image]"
+                    else:
+                        user_prompt += f"\n{prompt}"
                 chat.history.append(self.__to_user_content__(user_prompt))
                 chat.history.append(self.__to_model_content__(response.text))
         except generation_types.BrokenResponseError as e:
