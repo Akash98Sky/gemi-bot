@@ -18,8 +18,13 @@ class ChatService(object):
         genai.configure(api_key=api_key)
         if bing_cookie and len(bing_cookie) > 0:
             self.image_model = ImageGenAsync(auth_cookie=bing_cookie, quiet=True, proxy=proxy)
-        self.model = genai.GenerativeModel("gemini-pro")
-        self.vision_model = genai.GenerativeModel('gemini-pro-vision')
+        safety_settings = {
+            'HARASSMENT': 'block_none',
+            'HATE_SPEECH': 'block_none',
+            'SEXUAL': 'block_only_high',
+        }
+        self.model = genai.GenerativeModel("gemini-pro", safety_settings=safety_settings)
+        self.vision_model = genai.GenerativeModel('gemini-pro-vision', safety_settings=safety_settings)
 
     def __is_vision_prompt(self, prompts: Union[Iterable[Union[str, Image]], str]):
         if isinstance(prompts, str):
