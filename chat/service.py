@@ -24,7 +24,7 @@ class ChatService(object):
             'SEXUAL': 'block_only_high',
         }
         gen_config = generation_types.GenerationConfig(
-            temperature=0.4,
+            temperature=0.6,
         )
         self.model = genai.GenerativeModel("gemini-pro", safety_settings=safety_settings, generation_config=gen_config)
         self.vision_model = genai.GenerativeModel('gemini-pro-vision', safety_settings=safety_settings, generation_config=gen_config)
