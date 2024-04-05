@@ -25,15 +25,16 @@ routers = [
 message_router.message.middleware.register(PromptGenMiddleware())
 
 @command_router.message(CommandStart())
-async def command_start_handler(message: Message) -> None:
+async def command_start_handler(message: Message, repo: ChatRepo) -> None:
     """
     This handler receives messages with `/start` command
     """
-    # Most event objects have aliases for API methods that can be called in events' context
-    # For example if you want to answer to incoming message you can use `message.answer(...)` alias
-    # and the target chat will be passed to :ref:`aiogram.methods.send_message.SendMessage`
-    # method automatically or call API method directly via
-    # Bot instance: `bot.send_message(chat_id=message.chat.id, ...)`
+    chat: Chat = await repo.get_chat_session(message.chat.id)
+
+    if chat:
+        # Reset the chat session if it exists
+        await chat.reset()
+
     await message.answer(f"Hello, {bold(message.from_user.full_name)}\!")
 
 

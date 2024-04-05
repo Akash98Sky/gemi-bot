@@ -1,11 +1,11 @@
-aiogram~=3.2.0
+aiogram~=3.4.1
 dependency-injector~=4.41.0
-google-generativeai~=0.3.2
+google-generativeai~=0.4.1
 gunicorn~=21.2.0
-pillow~=10.2.0
+pillow~=10.3.0
 pypdfium2~=4.25.0
-duckduckgo-search~=5.1
+duckduckgo-search~=5.2.2
 sentry_sdk~=1.39.1
-re_edge_gpt~=0.0.20
+re_edge_gpt~=0.0.35
 md2tgmd @ git+https://github.com/yym68686/md2tgmd.git
 python-dotenv~=1.0.1
