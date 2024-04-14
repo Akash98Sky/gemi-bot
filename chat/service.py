@@ -11,7 +11,6 @@ logging: Logger = getLogger(__name__)
 
 class ChatService(object):
     model: genai.GenerativeModel
-    vision_model: genai.GenerativeModel
     image_model: ImageGenAsync | None = None
 
     def __init__(self, api_key: str, bing_cookie: str | None = None, proxy: str | None = None):
@@ -27,7 +26,6 @@ class ChatService(object):
             temperature=0.6,
         )
         self.model = genai.GenerativeModel('gemini-1.5-pro-latest', safety_settings=safety_settings, generation_config=gen_config)
-        self.vision_model = genai.GenerativeModel('gemini-1.0-pro-vision-latest', safety_settings=safety_settings, generation_config=gen_config)
 
     def __is_vision_prompt(self, prompts: Union[Iterable[Union[str, Image]], str]):
         if isinstance(prompts, str):
@@ -50,12 +48,8 @@ class ChatService(object):
         ))
 
     async def gen_response(self, prompts: Iterable[Union[str, Image]], chat: ChatSession | None = None, stream = False):
-        is_vision = False
         try:
-            if self.__is_vision_prompt(prompts):
-                is_vision = True
-                response = await self.vision_model.generate_content_async(contents=prompts, stream=stream)
-            elif chat:
+            if chat:
                 response = await chat.send_message_async(content=prompts, stream=stream)
             else:
                 response = await self.model.generate_content_async(contents=prompts, stream=stream)
@@ -63,15 +57,6 @@ class ChatService(object):
             async for res in response:
                 yield ''.join([part.text for part in res.parts])
 
-            if is_vision and chat:
-                user_prompt = ''
-                for prompt in prompts:
-                    if isinstance(prompt, Image):
-                        user_prompt += f"\n[Image]"
-                    else:
-                        user_prompt += f"\n{prompt}"
-                chat.history.append(self.__to_user_content__(user_prompt))
-                chat.history.append(self.__to_model_content__(response.text))
         except generation_types.BrokenResponseError as e:
             logging.exception(e)
             if chat:
@@ -84,11 +69,8 @@ class ChatService(object):
         return self.gen_response(prompts=prompts, chat=chat, stream=True)
 
     def create_chat_session(self, history: list[content_types.StrictContentType] = []):
-        if next((prompt for prompt in history if isinstance(prompt, Image)), None) != None:
-            return self.vision_model.start_chat(history=history)
-        else:
-            history.extend(CHAT_INIT_HISTORY)
-            return self.model.start_chat(history=history)
+        history.extend(CHAT_INIT_HISTORY)
+        return self.model.start_chat(history=history)
 
     def gen_image_response(self, prompt: str):
         if not self.image_model:
