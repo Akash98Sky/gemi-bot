@@ -71,9 +71,10 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
                 elif sent:
                     response = response + reply
                     error = None
-                    if sent:
-                        # escape() converts Markdown to Telegram specific Markdown v2 format
-                        sent = await sent.edit_text(text=escape(response))
+                    # escape() converts Markdown to Telegram specific Markdown v2 format
+                    response_md = escape(response)
+                    if sent.text != response_md:
+                        sent = await sent.edit_text(text=response_md)
             except TelegramBadRequest as e:
                 error = e
                 # Ignore intermediate errors

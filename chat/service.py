@@ -26,8 +26,8 @@ class ChatService(object):
         gen_config = generation_types.GenerationConfig(
             temperature=0.6,
         )
-        self.model = genai.GenerativeModel("gemini-pro", safety_settings=safety_settings, generation_config=gen_config)
-        self.vision_model = genai.GenerativeModel('gemini-pro-vision', safety_settings=safety_settings, generation_config=gen_config)
+        self.model = genai.GenerativeModel('gemini-1.5-pro-latest', safety_settings=safety_settings, generation_config=gen_config)
+        self.vision_model = genai.GenerativeModel('gemini-1.0-pro-vision-latest', safety_settings=safety_settings, generation_config=gen_config)
 
     def __is_vision_prompt(self, prompts: Union[Iterable[Union[str, Image]], str]):
         if isinstance(prompts, str):
