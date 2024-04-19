@@ -1,5 +1,6 @@
 from dependency_injector import providers, containers
 from bot.bot import TgBot
+from chat.img_gen_engine import ImgGenEngine
 from chat.query_processor import QueryProcessor
 from chat.repository import ChatRepo
 from chat.service import ChatService
@@ -10,8 +11,9 @@ class Configs(containers.DeclarativeContainer):
     chat_config = providers.Configuration('chat')
 
 class BotContainer(containers.DeclarativeContainer):
-    chat_service = providers.Singleton(ChatService, api_key=Configs.chat_config.api_key, bing_cookie=Configs.chat_config.bing_cookie, proxy=Configs.chat_config.proxy_url)
+    chat_service = providers.Singleton(ChatService, api_key=Configs.chat_config.api_key)
     voice_engine = providers.Singleton(VoiceEngine, voice_api_url=Configs.chat_config.voice_api_url, tts_voice=Configs.chat_config.tts_voice, stt_engine=Configs.chat_config.stt_engine)
-    query_processor = providers.Singleton(QueryProcessor, service=chat_service, voice=voice_engine)
+    img_gen_engine = providers.Singleton(ImgGenEngine, bing_cookie=Configs.chat_config.bing_cookie, google_cookie=Configs.chat_config.google_cookie)
+    query_processor = providers.Singleton(QueryProcessor, service=chat_service, voice=voice_engine, img_gen=img_gen_engine)
     chat_repo = providers.Factory(ChatRepo, service=chat_service, processor=query_processor)
     tg_bot = providers.Singleton(TgBot, token=Configs.bot_config.token, chat_repo=chat_repo, voice_engine=voice_engine, webhook_host=Configs.bot_config.webhook_host, webhook_secret=Configs.bot_config.webhook_secret)

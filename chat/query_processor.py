@@ -7,6 +7,7 @@ import time
 
 from chat.service import ChatService
 from chat.voice_engine import VoiceEngine
+from chat.img_gen_engine import ImgGenEngine
 from prompts.keywords import IMAGE_QUERY, SEARCH_QUERIES, VOICE_RESPONSE
 from prompts.templates import build_searchengine_response_prompt
 
@@ -15,15 +16,17 @@ logging: Logger = getLogger(__name__)
 class QueryProcessor():
     __service: ChatService
     __voice_engine: VoiceEngine
+    __img_gen_engine: ImgGenEngine
     __query_list__ = [
         IMAGE_QUERY,
         SEARCH_QUERIES,
         VOICE_RESPONSE
     ]
 
-    def __init__(self, service: ChatService, voice: VoiceEngine):
+    def __init__(self, service: ChatService, voice: VoiceEngine, img_gen: ImgGenEngine):
         self.__service = service
         self.__voice_engine = voice
+        self.__img_gen_engine = img_gen
 
     async def __process_searchengine_query__(self, query: str):
         async with AsyncDDGS() as ddgs:
@@ -47,7 +50,7 @@ class QueryProcessor():
     
     async def __gen_image_data__(self, query: str):
         logging.debug(f"Generate image query: {query}")
-        image_urls: list[str] | None = await self.__service.gen_image_response(query)
+        image_urls: list[str] | None = await self.__img_gen_engine.gen_image_response(query)
         images: list[InputMediaPhoto] = []
 
         if image_urls:

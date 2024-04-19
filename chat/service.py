@@ -13,10 +13,8 @@ class ChatService(object):
     model: genai.GenerativeModel
     image_model: ImageGenAsync | None = None
 
-    def __init__(self, api_key: str, bing_cookie: str | None = None, proxy: str | None = None):
+    def __init__(self, api_key: str):
         genai.configure(api_key=api_key)
-        if bing_cookie and len(bing_cookie) > 0:
-            self.image_model = ImageGenAsync(auth_cookie=bing_cookie, quiet=True, proxy=proxy)
         safety_settings = {
             'HARASSMENT': 'block_none',
             'HATE_SPEECH': 'block_none',
@@ -26,14 +24,6 @@ class ChatService(object):
             temperature=0.6,
         )
         self.model = genai.GenerativeModel('gemini-1.5-pro-latest', safety_settings=safety_settings, generation_config=gen_config)
-
-    def __is_vision_prompt(self, prompts: Union[Iterable[Union[str, Image]], str]):
-        if isinstance(prompts, str):
-            return False
-        elif next((prompt for prompt in prompts if isinstance(prompt, Image)), None) != None:
-            return True
-        else:
-            return False
         
     def __to_user_content__(self, text: str):
         return content_types.strict_to_content(content_types.ContentDict(
@@ -72,7 +62,3 @@ class ChatService(object):
         history.extend(CHAT_INIT_HISTORY)
         return self.model.start_chat(history=history)
 
-    def gen_image_response(self, prompt: str):
-        if not self.image_model:
-            raise UnsupportedException("Image generation is not enabled.")
-        return self.image_model.get_images(prompt, max_generate_time_sec=30)

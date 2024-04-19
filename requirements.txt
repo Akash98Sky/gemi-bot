@@ -6,6 +6,6 @@ pillow~=10.3.0
 pypdfium2~=4.25.0
 duckduckgo-search~=5.2.2
 sentry_sdk~=1.39.1
-re_edge_gpt~=0.0.35
 md2tgmd @ git+https://github.com/yym68686/md2tgmd.git
 python-dotenv~=1.0.1
+g4f[image]~=0.3.0.1
