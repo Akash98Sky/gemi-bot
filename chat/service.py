@@ -5,13 +5,11 @@ import google.generativeai as genai
 from google.generativeai.generative_models import content_types, generation_types, ChatSession
 from chat.exceptions import UnsupportedException
 from prompts.static import CHAT_INIT_HISTORY
-from re_edge_gpt import ImageGenAsync
 
 logging: Logger = getLogger(__name__)
 
 class ChatService(object):
     model: genai.GenerativeModel
-    image_model: ImageGenAsync | None = None
 
     def __init__(self, api_key: str):
         genai.configure(api_key=api_key)
