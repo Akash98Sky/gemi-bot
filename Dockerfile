@@ -17,4 +17,4 @@ RUN poetry install --only main
 EXPOSE 8080
 
 # Run app.py when the container launches
-ENTRYPOINT ["gunicorn", "main:web_app", "--bind", "0.0.0.0:8080", "-k", "aiohttp.GunicornWebWorker"]
+ENTRYPOINT ["poetry", "run", "gunicorn", "main:web_app", "--bind", "0.0.0.0:8080", "-k", "aiohttp.GunicornWebWorker"]
