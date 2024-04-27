@@ -52,7 +52,8 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
                     error = None
                     # escape() converts Markdown to Telegram specific Markdown v2 format
                     response_md = escape(response)
-                    if sent.text.strip() != response_md.strip():
+                    if sent.md_text.strip() != response_md.strip():
+                        # Only update if there was a change
                         sent = await sent.edit_text(text=response_md)
             except TelegramBadRequest as e:
                 error = e
