@@ -3,3 +3,6 @@ class UnsupportedFileFormatException(Exception):
 
 class FileSizeTooBigException(Exception):
     pass
+
+class FeatureNotEnabledException(Exception):
+    pass

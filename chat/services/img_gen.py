@@ -8,8 +8,8 @@ from g4f.Provider import BingCreateImages, DeepInfraImage, ReplicateImage, Gemin
 
 logging: Logger = getLogger(__name__)
 
-class ImgGenEngine():
-    __name__ = "ImgGenEngine"
+class ImgGenService():
+    __name__ = "ImgGenService"
     providers: list[AsyncGeneratorProvider] = []
 
     def __init__(

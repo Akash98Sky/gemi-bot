@@ -3,12 +3,11 @@ from typing import Iterable, Union
 from PIL.Image import Image
 import google.generativeai as genai
 from google.generativeai.generative_models import content_types, generation_types, ChatSession
-from chat.exceptions import UnsupportedException
-from prompts.static import CHAT_INIT_HISTORY
+from chat.prompts.static import CHAT_INIT_HISTORY
 
 logging: Logger = getLogger(__name__)
 
-class ChatService(object):
+class GeminiService(object):
     model: genai.GenerativeModel
 
     def __init__(self, api_key: str):

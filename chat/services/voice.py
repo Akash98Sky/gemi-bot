@@ -4,11 +4,11 @@ import signal
 from aiohttp import ClientSession, FormData, JsonPayload
 from logging import getLogger
 
-from chat.exceptions import UnsupportedException
+from common.types.exceptions import FeatureNotEnabledException
 
 logging = getLogger(__name__)
 
-class VoiceEngine:
+class VoiceService:
     __engine_busy_sem = asyncio.BoundedSemaphore(1)
     __client_session: ClientSession | None = None
     __tts: str
@@ -60,7 +60,7 @@ class VoiceEngine:
 
     async def text_to_wave(self, text: str):
         if not self.__client_session:
-            raise UnsupportedException("Voice engine is not enabled.")
+            raise FeatureNotEnabledException("Voice engine is not enabled.")
         
         async with self.__engine_busy_sem:
             # Wait until engine is up
@@ -75,7 +75,7 @@ class VoiceEngine:
 
     async def voice_to_text(self, voice: bytes, content_type: str = 'audio/wav'):
         if not self.__client_session:
-            raise UnsupportedException("Voice engine is not enabled.")
+            raise FeatureNotEnabledException("Voice engine is not enabled.")
         
         async with self.__engine_busy_sem:
             # Wait until engine is up

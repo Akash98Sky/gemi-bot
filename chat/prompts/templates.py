@@ -1,4 +1,4 @@
-from prompts.keywords import MESSAGE_METADATA, SEARCH_RESPONSES
+from common.constants.keywords import MESSAGE_METADATA, SEARCH_RESPONSES
 
 def build_searchengine_response_prompt(responses: list[dict[str, str]]):
     res = f"{SEARCH_RESPONSES}:\n"

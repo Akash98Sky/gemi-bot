@@ -1,6 +1,6 @@
 from google.generativeai.generative_models import content_types
 
-from prompts.keywords import IMAGE_QUERY, MESSAGE_METADATA, SEARCH_QUERIES, SEARCH_RESPONSES, VOICE_RESPONSE
+from common.constants.keywords import IMAGE_QUERY, MESSAGE_METADATA, SEARCH_QUERIES, SEARCH_RESPONSES, VOICE_RESPONSE
 
 CHAT_INIT_HISTORY = [
     content_types.ContentDict(parts = ["""

@@ -70,7 +70,7 @@ def init_bot(app: Application):
     BotContainer.tg_bot().register_webhook_handler(app, WEBHOOK_PATH)
 
     # This will start the voice engine and bring it up
-    BotContainer.voice_engine()
+    BotContainer.voice_service()
 
 async def web_app():
     if path.exists(".env"):

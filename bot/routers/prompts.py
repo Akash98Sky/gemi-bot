@@ -1,44 +1,23 @@
 from logging import Logger, getLogger
 from PIL.Image import Image
-from typing import Any, Dict, Union
+from typing import Union
 from aiogram import Router
-from aiogram.filters import CommandStart
 from aiogram.types import Message, InputMediaAudio
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.utils.markdown import bold, italic, pre
+from aiogram.utils.markdown import italic, pre
 
-from bot.middlewares import PromptGenMiddleware
+from bot.middlewares.prompt_gen import PromptGenMiddleware
 from chat.repository import Chat, ChatRepo
 from md2tgmd import escape
 
 logging: Logger = getLogger(__name__)
 
 # All handlers should be attached to the Router (or Dispatcher)
-command_router = Router(name='/')
-message_router = Router(name='/commands')
+prompts_router = Router(name='message_router')
 
-routers = [
-    command_router,
-    message_router
-]
+prompts_router.message.middleware.register(PromptGenMiddleware())
 
-message_router.message.middleware.register(PromptGenMiddleware())
-
-@command_router.message(CommandStart())
-async def command_start_handler(message: Message, repo: ChatRepo) -> None:
-    """
-    This handler receives messages with `/start` command
-    """
-    chat: Chat = await repo.get_chat_session(message.chat.id)
-
-    if chat:
-        # Reset the chat session if it exists
-        await chat.reset()
-
-    await message.answer(f"Hello, {bold(message.from_user.full_name)}\!")
-
-
-@message_router.message()
+@prompts_router.message()
 async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str, Image]] = [], sent: Message | None = None) -> None:
     """
     Handler will forward receive a message back to the sender
@@ -73,7 +52,7 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
                     error = None
                     # escape() converts Markdown to Telegram specific Markdown v2 format
                     response_md = escape(response)
-                    if sent.text != response_md:
+                    if sent.text.strip() != response_md.strip():
                         sent = await sent.edit_text(text=response_md)
             except TelegramBadRequest as e:
                 error = e

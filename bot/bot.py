@@ -4,11 +4,11 @@ from aiogram.enums import ParseMode
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp.web import Application
 
-from bot.routes import routers
-from bot.hack import HackyMiddleware
-from bot.enums import BotEventMethods
+from bot.routers import commands, prompts
+from bot.middlewares.hack import HackyMiddleware
+from common.types.enums import BotEventMethods
 from chat.repository import ChatRepo
-from chat.voice_engine import VoiceEngine
+from chat.services.voice import VoiceService
 
 logging: Logger = getLogger(__name__)
 
@@ -16,13 +16,16 @@ class TgBot(object):
     bot: Bot
     dispatcher: Dispatcher
     chat_repo: ChatRepo
-    voice_engine: VoiceEngine
+    voice_service: VoiceService
     webhook_host: str
     webhook_path: str
     secret: str
     method: BotEventMethods
 
-    routers = routers
+    routers = [
+        commands.command_router,
+        prompts.prompts_router
+    ]
 
     def __something_hacky__(self):
         hacky = HackyMiddleware(self)
@@ -30,12 +33,12 @@ class TgBot(object):
         self.dispatcher.startup.register(hacky.startup)
         self.dispatcher.shutdown.register(hacky.shutdown)
 
-    def __init__(self, token: str, chat_repo: ChatRepo, voice_engine: VoiceEngine, webhook_host: str, parse_mode: ParseMode = ParseMode.MARKDOWN_V2, webhook_secret: str = ''):
+    def __init__(self, token: str, chat_repo: ChatRepo, voice_service: VoiceService, webhook_host: str, parse_mode: ParseMode = ParseMode.MARKDOWN_V2, webhook_secret: str = ''):
         self.bot = Bot(token, parse_mode=parse_mode)
         self.dispatcher = Dispatcher()
         self.dispatcher.include_routers(*self.routers)
         self.chat_repo = chat_repo
-        self.voice_engine = voice_engine
+        self.voice_service = voice_service
         self.webhook_host = webhook_host
         self.secret = webhook_secret
         self.method = BotEventMethods.unknown
@@ -43,7 +46,7 @@ class TgBot(object):
 
     def start_polling(self):
         self.method = BotEventMethods.polling
-        return self.dispatcher.start_polling(self.bot, handle_signals=False, repo=self.chat_repo, voice_engine=self.voice_engine)
+        return self.dispatcher.start_polling(self.bot, handle_signals=False, repo=self.chat_repo, voice_service=self.voice_service)
     
     def register_webhook_handler(self, app: Application, path: str):
         # Create an instance of request handler,
@@ -54,7 +57,7 @@ class TgBot(object):
             bot=self.bot,
             secret_token=self.secret,
             repo=self.chat_repo,
-            voice_engine=self.voice_engine,
+            voice_service=self.voice_service,
             handle_in_background=False
         )
         # Register webhook handler on application

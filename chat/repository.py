@@ -2,7 +2,7 @@ import asyncio
 from typing import Iterable, Union
 from google.generativeai.generative_models import content_types, ChatSession
 
-from chat.service import ChatService
+from chat.services.gemini import GeminiService
 from chat.query_processor import QueryProcessor
 
 class Chat():
@@ -29,20 +29,20 @@ class Chat():
         self.__session.history.extend(self.__chat_init_history)
 
 class ChatRepo():
-    __service: ChatService
+    __gemini: GeminiService
     __chats: dict[int, Chat]
     __chat_creation_sem = asyncio.BoundedSemaphore(1)
     __query_processor: QueryProcessor
 
-    def __init__(self, service: ChatService, processor: QueryProcessor) -> None:
-        self.__service = service
+    def __init__(self, gemini: GeminiService, processor: QueryProcessor) -> None:
+        self.__gemini = gemini
         self.__chats = {}
         self.__query_processor = processor
 
     async def get_chat_session(self, chat_id: int):
         async with self.__chat_creation_sem:
             if chat_id not in self.__chats.keys():
-                session = self.__service.create_chat_session()
+                session = self.__gemini.create_chat_session()
                 self.__chats[chat_id] = Chat(id=chat_id, session=session, processor=self.__query_processor)
         return self.__chats[chat_id]
     

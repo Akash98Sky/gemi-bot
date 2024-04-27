@@ -6,7 +6,7 @@ from aiogram.types import Message
 from aiohttp.web import Response
 from os import getenv
 
-from bot.enums import BotEventMethods
+from common.types.enums import BotEventMethods
 from utils.aiotimer import Timer
 
 logging: Logger = getLogger(__name__)

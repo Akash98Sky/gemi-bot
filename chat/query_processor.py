@@ -5,28 +5,28 @@ from duckduckgo_search import AsyncDDGS
 from google.generativeai.generative_models import ChatSession, content_types
 import time
 
-from chat.service import ChatService
-from chat.voice_engine import VoiceEngine
-from chat.img_gen_engine import ImgGenEngine
-from prompts.keywords import IMAGE_QUERY, SEARCH_QUERIES, VOICE_RESPONSE
-from prompts.templates import build_searchengine_response_prompt
+from chat.services.gemini import GeminiService
+from chat.services.voice import VoiceService
+from chat.services.img_gen import ImgGenService
+from common.constants.keywords import IMAGE_QUERY, SEARCH_QUERIES, VOICE_RESPONSE
+from chat.prompts.templates import build_searchengine_response_prompt
 
 logging: Logger = getLogger(__name__)
 
 class QueryProcessor():
-    __service: ChatService
-    __voice_engine: VoiceEngine
-    __img_gen_engine: ImgGenEngine
+    __gemini: GeminiService
+    __voice: VoiceService
+    __img_gen: ImgGenService
     __query_list__ = [
         IMAGE_QUERY,
         SEARCH_QUERIES,
         VOICE_RESPONSE
     ]
 
-    def __init__(self, service: ChatService, voice: VoiceEngine, img_gen: ImgGenEngine):
-        self.__service = service
-        self.__voice_engine = voice
-        self.__img_gen_engine = img_gen
+    def __init__(self, gemini: GeminiService, voice: VoiceService, img_gen: ImgGenService):
+        self.__gemini = gemini
+        self.__voice = voice
+        self.__img_gen = img_gen
 
     async def __process_searchengine_query__(self, query: str):
         async with AsyncDDGS() as ddgs:
@@ -50,7 +50,7 @@ class QueryProcessor():
     
     async def __gen_image_data__(self, query: str):
         logging.debug(f"Generate image query: {query}")
-        image_urls: list[str] | None = await self.__img_gen_engine.gen_image_response(query)
+        image_urls: list[str] | None = await self.__img_gen.gen_image_response(query)
         images: list[InputMediaPhoto] = []
 
         if image_urls:
@@ -62,14 +62,14 @@ class QueryProcessor():
     async def __gen_voice_data__(self, query: str, chat_id: int):
         logging.debug(f"Generate voice query: {query}")
         file_name = f"voice_{chat_id}_{int(time.time())}.wav"
-        text_voice_url = await self.__voice_engine.text_to_wave(query)
+        text_voice_url = await self.__voice.text_to_wave(query)
         if text_voice_url:
             return InputMediaAudio(media=URLInputFile(text_voice_url, filename=file_name))
     
     async def process_response(self, session: ChatSession, messages: list[content_types.PartType], chat_id: int):
         text = ""
         has_query = False
-        response_stream = self.__service.gen_response_stream(prompts=messages, chat=session)
+        response_stream = self.__gemini.gen_response_stream(prompts=messages, chat=session)
 
         async for res in response_stream:
             text += res
