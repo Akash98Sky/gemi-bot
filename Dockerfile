@@ -13,6 +13,9 @@ COPY . .
 RUN python -m pip install --upgrade pip poetry
 RUN poetry install --only main
 
+# Generate Prisma Client
+RUN poetry run prisma generate
+
 # Make port 8080 available to the world outside this container
 EXPOSE 8080
 

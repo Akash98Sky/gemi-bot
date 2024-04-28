@@ -1,0 +1,40 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGODB_URL")
+}
+
+generator db {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+model User {
+  objId      String    @id @default(auto()) @map("_id") @db.ObjectId
+  id         BigInt    @unique
+  username   String
+  firstName  String?
+  lastName   String?
+  chats      Chat[]    @relation(fields: [chatObjIds], references: [objId])
+  chatObjIds String[]  @db.ObjectId
+  messages   Message[]
+}
+
+model Chat {
+  objId      String    @id @default(auto()) @map("_id") @db.ObjectId
+  id         BigInt    @unique
+  title      String
+  users      User[]    @relation(fields: [userObjIds], references: [objId])
+  userObjIds String[]  @db.ObjectId
+  messages   Message[]
+}
+
+model Message {
+  objId  String  @id @default(auto()) @map("_id") @db.ObjectId
+  id     Int
+  text   String
+  user   User?   @relation(fields: [userId], references: [id])
+  userId BigInt?
+  chat   Chat    @relation(fields: [chatId], references: [id])
+  chatId BigInt
+}

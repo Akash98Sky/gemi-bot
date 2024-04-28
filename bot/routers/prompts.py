@@ -15,7 +15,7 @@ logging: Logger = getLogger(__name__)
 prompts_router = Router(name='message_router')
 
 @prompts_router.message()
-async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str, Image]] = []) -> None:
+async def echo_handler(message: Message, repo: ChatRepo) -> None:
     """
     Handler will forward receive a message back to the sender
 
@@ -25,22 +25,21 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
         # Send a reply to the received message
         sent = await message.reply(text=italic('Thinking...'))
 
-        chat: Chat = await repo.get_chat_session(message.chat.id)
+        chat_users = [user for user in [message.from_user, sent.from_user] if user]
+        chat: Chat = await repo.get_chat_session(message.chat, users=chat_users)
         
         response = ""
         error: TelegramBadRequest | None = None
-        async for reply in chat.send_message_async(message, sent):
+        async for reply in chat.send_message_async(message):
             try:
                 if isinstance(reply, list):
                     if sent:
                         await sent.delete()
-                        sent = None
-                    await message.reply_media_group(media=reply)
+                    sent = await message.reply_media_group(media=reply)
                 elif isinstance(reply, InputMediaAudio):
                     if sent:
                         await sent.delete()
-                        sent = None
-                    await message.reply_voice(voice=reply.media)
+                    sent = await message.reply_voice(voice=reply.media)
                 elif sent:
                     response = response + reply
                     error = None
@@ -58,6 +57,9 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
 
         if error:
             raise error
+        else:
+            # Memorize the messages
+            chat.memorize_messages(message, sent)
     except TelegramBadRequest as e:
         # Ignore intermediate errors
         logging.warn(f'Failed to reply message: {message.text}, TelegramBadRequest: {e}')
