@@ -66,6 +66,10 @@ def init_bot(app: Application):
     configs.chat_config.tts_voice.from_env("TTS_VOICE", default="flite:cmu_us_slt")
     # Speech to text engine
     configs.chat_config.stt_engine.from_env("STT_ENGINE", default="vosk")
+    # qdrant db url
+    configs.chat_config.qdrant_db_url.from_env("QDRANT_DB_URL")
+    # qdrant db api key
+    configs.chat_config.qdrant_api_key.from_env("QDRANT_API_KEY")
 
     BotContainer.tg_bot().register_webhook_handler(app, WEBHOOK_PATH)
 

@@ -54,8 +54,16 @@ class GeminiService(object):
 
     def gen_response_stream(self, prompts: Union[Iterable[Union[str, Image]], str], chat: ChatSession | None = None):
         return self.gen_response(prompts=prompts, chat=chat, stream=True)
+    
+    async def embed_contents(self, contents: Iterable[content_types.ContentType]):
+        result = await genai.embed_content_async(
+            model='models/embedding-001',
+            client=self.model._async_client,
+            content=contents
+        )
+        return list[list[float]](result['embedding'])
 
-    def create_chat_session(self, history: list[content_types.StrictContentType] = []):
+    def create_chat_session(self, history: Iterable[content_types.StrictContentType] = []):
         history.extend(CHAT_INIT_HISTORY)
         return self.model.start_chat(history=history)
 

@@ -6,6 +6,7 @@ from google.generativeai.generative_models import ChatSession, content_types
 import time
 
 from chat.services.gemini import GeminiService
+from chat.services.vector_db import VectorDbService, PointStruct
 from chat.services.voice import VoiceService
 from chat.services.img_gen import ImgGenService
 from common.constants.keywords import IMAGE_QUERY, SEARCH_QUERIES, VOICE_RESPONSE
@@ -17,16 +18,18 @@ class QueryProcessor():
     __gemini: GeminiService
     __voice: VoiceService
     __img_gen: ImgGenService
+    __vector_db: VectorDbService
     __query_list__ = [
         IMAGE_QUERY,
         SEARCH_QUERIES,
         VOICE_RESPONSE
     ]
 
-    def __init__(self, gemini: GeminiService, voice: VoiceService, img_gen: ImgGenService):
+    def __init__(self, gemini: GeminiService, voice: VoiceService, img_gen: ImgGenService, vector_db: VectorDbService):
         self.__gemini = gemini
         self.__voice = voice
         self.__img_gen = img_gen
+        self.__vector_db = vector_db
 
     async def __process_searchengine_query__(self, query: str):
         async with AsyncDDGS() as ddgs:
@@ -65,8 +68,25 @@ class QueryProcessor():
         text_voice_url = await self.__voice.text_to_wave(query)
         if text_voice_url:
             return InputMediaAudio(media=URLInputFile(text_voice_url, filename=file_name))
+        
+    async def __save_embeddings(self, contents: list[content_types.ContentType], msg_ids: list[int], chat_id: int):
+        text_contents = [
+            content_types.ContentDict(
+                parts=[part.text if part.text.strip() != '' else f'[{part.inline_data.mime_type}]' for part in content.parts],
+                role=content.role
+            ) for content in contents
+        ]
+        embeddings = await self.__gemini.embed_contents(text_contents)
+        
+        self.__vector_db.add_vectors([
+            PointStruct(
+                id=msg_id,
+                vector=embedding,
+                payload={'chat': chat_id, 'message': msg_id}
+            ) for msg_id, embedding in zip(msg_ids, embeddings)
+        ])
     
-    async def process_response(self, session: ChatSession, messages: list[content_types.PartType], chat_id: int):
+    async def process_response(self, session: ChatSession, messages: list[content_types.PartType], chat_id: int, rcvd_msg_id: int, sent_msg_id: int):
         text = ""
         has_query = False
         response_stream = self.__gemini.gen_response_stream(prompts=messages, chat=session)
@@ -96,3 +116,7 @@ class QueryProcessor():
                 response_stream = self.process_response(session=session, messages=[query_responses_prompt], chat_id=chat_id)
                 async for res in response_stream:
                     yield res
+
+        last_msg_pair = session.history[-2:]
+        await self.__save_embeddings(last_msg_pair, [rcvd_msg_id, sent_msg_id], chat_id)
+        

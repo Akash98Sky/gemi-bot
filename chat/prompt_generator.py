@@ -1,9 +1,8 @@
 import asyncio
 from logging import Logger, getLogger
-from typing import Any, Awaitable, Callable, Dict, Union
-from aiogram import BaseMiddleware, Bot
+from typing import Union
+from aiogram import Bot
 from aiogram.types import Message, Document, PhotoSize, Audio, Voice
-from aiogram.utils.markdown import italic
 from io import BytesIO
 from PIL.Image import Image, open
 import pypdfium2 as pdfium
@@ -15,7 +14,12 @@ from utils.docreader import get_docx_text
 
 logging: Logger = getLogger(__name__)
 
-class PromptGenMiddleware(BaseMiddleware):
+class PromptGenerator():
+    __voice_service: VoiceService
+
+    def __init__(self, voice_service: VoiceService):
+        self.__voice_service = voice_service
+
     async def __gen_img_prompt__(self, photo: list[Union[PhotoSize, Document]], bot: Bot):
         limit_size = [p for p in photo if p.file_size <= 150000] # limit to 150kb
         limit_size.sort(key=lambda ps: ps.file_size)
@@ -72,7 +76,7 @@ class PromptGenMiddleware(BaseMiddleware):
             text += get_docx_text(binfile)
         return text
 
-    async def __msg_to_prompt__(self, msg: Message, voice_service: VoiceService, exclude_caption: bool = False, exclude_metadata: bool = False):
+    async def __msg_to_prompt__(self, msg: Message, exclude_caption: bool = False, exclude_metadata: bool = False):
         prompts: list[Union[str, Image]] = []
         meta_dict: dict[str, str] = {
             'timestamp': str(msg.date),
@@ -87,9 +91,9 @@ class PromptGenMiddleware(BaseMiddleware):
             
             prompts.append(await self.__gen_img_prompt__(msg.photo, bot=msg.bot))
         elif (msg.voice):
-            prompts.append(await self.__gen_voice_prompt__(msg.voice, voice_service, bot=msg.bot))
+            prompts.append(await self.__gen_voice_prompt__(msg.voice, self.__voice_service, bot=msg.bot))
         elif (msg.audio):
-            prompts.append(await self.__gen_voice_prompt__(msg.audio, voice_service, bot=msg.bot))
+            prompts.append(await self.__gen_voice_prompt__(msg.audio, self.__voice_service, bot=msg.bot))
         elif (msg.sticker):
             if (msg.sticker.thumbnail):
                 prompts.append(await self.__gen_img_prompt__([msg.sticker.thumbnail], bot=msg.bot))
@@ -112,43 +116,37 @@ class PromptGenMiddleware(BaseMiddleware):
             prompts.append(build_msg_metadata_prompt(meta_dict))
         return prompts
 
-    async def __call__(
+    async def generate(
         self,
-        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
-        event: Message,
-        data: Dict[str, Any]
-    ) -> Any:
-        sent = None
-        voice_service = data['voice_service']
+        message: Message
+    ):
         try:
-            sent = await event.reply(italic('Downloading message...'))
+            # sent = await message.reply(italic('Downloading message...'))
             prompts: list[Union[str, Image]] = []
             tasks: list[asyncio.Task] = []
 
-            tasks.append(asyncio.create_task(self.__msg_to_prompt__(event, voice_service)))
+            tasks.append(asyncio.create_task(self.__msg_to_prompt__(message)))
             tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))
 
-            reply_of = event.reply_to_message
+            reply_of = message.reply_to_message
             if (reply_of):
-                tasks.append(asyncio.create_task(self.__msg_to_prompt__(reply_of, voice_service, exclude_caption=True, exclude_metadata=True)))
+                tasks.append(asyncio.create_task(self.__msg_to_prompt__(reply_of, exclude_caption=True, exclude_metadata=True)))
                 tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))
 
             await asyncio.gather(*tasks)
+            
+            return prompts
         except UnsupportedFileFormatException:
-            await sent.edit_text(italic('Unsupported document type.'))
-            return
+            # await sent.edit_text(italic('Unsupported document type.'))
+            pass
         except FileSizeTooBigException:
-            await sent.edit_text(italic('File size too big.'))
-            return
+            # await sent.edit_text(italic('File size too big.'))
+            pass
         except Exception as e:
             logging.error(e)
-            if sent:
-                await sent.edit_text(italic('Error while downloading message.'))
-            else:
-                await event.reply(italic('Error while downloading message.'))
-            return
+            # if sent:
+            #     await sent.edit_text(italic('Error while downloading message.'))
+            # else:
+            #     await event.reply(italic('Error while downloading message.'))
+            # return
 
-        data['sent'] = sent
-        data['prompts'] = prompts
-
-        return await handler(event, data)

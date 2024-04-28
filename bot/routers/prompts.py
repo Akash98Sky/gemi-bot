@@ -6,7 +6,6 @@ from aiogram.types import Message, InputMediaAudio
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.utils.markdown import italic, pre
 
-from bot.middlewares.prompt_gen import PromptGenMiddleware
 from chat.repository import Chat, ChatRepo
 from md2tgmd import escape
 
@@ -15,10 +14,8 @@ logging: Logger = getLogger(__name__)
 # All handlers should be attached to the Router (or Dispatcher)
 prompts_router = Router(name='message_router')
 
-prompts_router.message.middleware.register(PromptGenMiddleware())
-
 @prompts_router.message()
-async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str, Image]] = [], sent: Message | None = None) -> None:
+async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str, Image]] = []) -> None:
     """
     Handler will forward receive a message back to the sender
 
@@ -26,16 +23,13 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
     """
     try:
         # Send a reply to the received message
-        if sent:
-            await sent.edit_text(text=italic("Thinking..."))
-        else:
-            sent = await message.reply(text=italic('Thinking...'))
+        sent = await message.reply(text=italic('Thinking...'))
 
         chat: Chat = await repo.get_chat_session(message.chat.id)
         
         response = ""
         error: TelegramBadRequest | None = None
-        async for reply in chat.send_message_async(prompts):
+        async for reply in chat.send_message_async(message, sent):
             try:
                 if isinstance(reply, list):
                     if sent:
