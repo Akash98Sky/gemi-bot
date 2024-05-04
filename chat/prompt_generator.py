@@ -7,6 +7,8 @@ from io import BytesIO
 from PIL.Image import Image, open
 import pypdfium2 as pdfium
 
+from chat.memorizer import Memorizer
+from common.models.scored_message import ScoredMessage
 from common.types.exceptions import FileSizeTooBigException, UnsupportedFileFormatException
 from chat.services.voice import VoiceService
 from chat.prompts.templates import build_msg_metadata_prompt
@@ -16,9 +18,11 @@ logging: Logger = getLogger(__name__)
 
 class PromptGenerator():
     __voice_service: VoiceService
+    __memorizer: Memorizer
 
-    def __init__(self, voice_service: VoiceService):
+    def __init__(self, voice_service: VoiceService, memorizer: Memorizer):
         self.__voice_service = voice_service
+        self.__memorizer = memorizer
 
     async def __gen_img_prompt__(self, photo: list[Union[PhotoSize, Document]], bot: Bot):
         limit_size = [p for p in photo if p.file_size <= 150000] # limit to 150kb
@@ -115,6 +119,10 @@ class PromptGenerator():
         if not exclude_metadata:
             prompts.append(build_msg_metadata_prompt(meta_dict))
         return prompts
+    
+    async def __past_message_to_prompt__(self, messages: list[ScoredMessage]):
+        prompt: Union[str, Image] = 'past_memories:\n' + '\n'.join(['\t- ' + msg.message.text for msg in messages])
+        return [ prompt ]
 
     async def generate(
         self,
@@ -124,6 +132,11 @@ class PromptGenerator():
             # sent = await message.reply(italic('Downloading message...'))
             prompts: list[Union[str, Image]] = []
             tasks: list[asyncio.Task] = []
+
+            memories = await self.__memorizer.recall(message.chat.id, message)
+            if memories:
+                tasks.append(asyncio.create_task(self.__past_message_to_prompt__(memories)))
+                tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))
 
             tasks.append(asyncio.create_task(self.__msg_to_prompt__(message)))
             tasks[-1].add_done_callback(lambda p: prompts.extend(p.result()))

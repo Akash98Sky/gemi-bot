@@ -18,6 +18,7 @@ model User {
   chats      Chat[]    @relation(fields: [chatObjIds], references: [objId])
   chatObjIds String[]  @db.ObjectId
   messages   Message[]
+  createdAt  DateTime  @default(now())
 }
 
 model Chat {
@@ -27,14 +28,19 @@ model Chat {
   users      User[]    @relation(fields: [userObjIds], references: [objId])
   userObjIds String[]  @db.ObjectId
   messages   Message[]
+  createdAt  DateTime  @default(now())
 }
 
 model Message {
-  objId  String  @id @default(auto()) @map("_id") @db.ObjectId
-  id     Int
-  text   String
-  user   User?   @relation(fields: [userId], references: [id])
-  userId BigInt?
-  chat   Chat    @relation(fields: [chatId], references: [id])
-  chatId BigInt
+  objId         String   @id @default(auto()) @map("_id") @db.ObjectId
+  id            Int
+  parentMsgId   Int?
+  childMsgId    Int?
+  text          String
+  textEmbedding Float[]
+  user          User?    @relation(fields: [userId], references: [id])
+  userId        BigInt?
+  chat          Chat     @relation(fields: [chatId], references: [id])
+  chatId        BigInt
+  createdAt     DateTime @default(now())
 }
