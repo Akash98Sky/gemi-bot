@@ -9,7 +9,7 @@ class Chat():
     __id: int
     __session: ChatSession
     __processor: QueryProcessor
-    __chat_init_history: list[content_types.glm.Content]
+    __chat_init_history: list[content_types.protos.Content]
     __sem = asyncio.BoundedSemaphore(1)
 
     def __init__(self, id: int, session: ChatSession, processor: QueryProcessor):

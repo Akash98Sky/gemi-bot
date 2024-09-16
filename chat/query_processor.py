@@ -1,5 +1,6 @@
 import asyncio
 from logging import Logger, getLogger
+from typing import Iterable, Union
 from aiogram.types import InputMediaPhoto, InputMediaAudio, URLInputFile
 from duckduckgo_search import AsyncDDGS
 from google.generativeai.generative_models import ChatSession, content_types
@@ -30,7 +31,7 @@ class QueryProcessor():
 
     async def __process_searchengine_query__(self, query: str):
         async with AsyncDDGS() as ddgs:
-            res = await ddgs.text(query, region="in-en", max_results=1)
+            res = await ddgs.atext(query, region="in-en", max_results=1)
             res[0]['query'] = query
             return res[0]
 
@@ -66,7 +67,7 @@ class QueryProcessor():
         if text_voice_url:
             return InputMediaAudio(media=URLInputFile(text_voice_url, filename=file_name))
     
-    async def process_response(self, session: ChatSession, messages: list[content_types.PartType], chat_id: int):
+    async def process_response(self, session: ChatSession, messages: Union[Iterable[content_types.PartType], str], chat_id: int):
         text = ""
         has_query = False
         response_stream = self.__gemini.gen_response_stream(prompts=messages, chat=session)

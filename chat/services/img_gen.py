@@ -4,7 +4,7 @@ from g4f.client.async_client import AsyncClient, Images
 from g4f.providers.base_provider import AsyncGeneratorProvider
 from g4f.providers.retry_provider import raise_exceptions
 from g4f.cookies import set_cookies
-from g4f.Provider import BingCreateImages, DeepInfraImage, ReplicateImage, Gemini, You
+from g4f.Provider import BingCreateImages, DeepInfraImage, Gemini, You
 
 logging: Logger = getLogger(__name__)
 
@@ -30,13 +30,12 @@ class ImgGenService():
             })
         # fallback providers
         self.providers.append(DeepInfraImage)
-        self.providers.append(ReplicateImage)
 
     async def gen_image_response(
         self,
         prompt: str,
         **kwargs
-    ) -> list[str]:
+    ) -> list[str] | None:
         exceptions: dict = {}
         for provider in self.providers:
             try:

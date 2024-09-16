@@ -1,5 +1,6 @@
 from logging import Logger, getLogger
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp.web import Application
@@ -34,7 +35,7 @@ class TgBot(object):
         self.dispatcher.shutdown.register(hacky.shutdown)
 
     def __init__(self, token: str, chat_repo: ChatRepo, voice_service: VoiceService, webhook_host: str, parse_mode: ParseMode = ParseMode.MARKDOWN_V2, webhook_secret: str = ''):
-        self.bot = Bot(token, parse_mode=parse_mode)
+        self.bot = Bot(token, default=DefaultBotProperties(parse_mode=parse_mode))
         self.dispatcher = Dispatcher()
         self.dispatcher.include_routers(*self.routers)
         self.chat_repo = chat_repo

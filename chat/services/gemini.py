@@ -20,7 +20,9 @@ class GeminiService(object):
         gen_config = generation_types.GenerationConfig(
             temperature=0.6,
         )
-        self.model = genai.GenerativeModel('gemini-1.5-pro-latest', safety_settings=safety_settings, generation_config=gen_config)
+        # for m in genai.list_models():
+        #     pprint.pprint(m)
+        self.model = genai.GenerativeModel('gemini-1.5-flash-latest', safety_settings=safety_settings, generation_config=gen_config)
         
     def __to_user_content__(self, text: str):
         return content_types.strict_to_content(content_types.ContentDict(
@@ -34,7 +36,7 @@ class GeminiService(object):
             role="model"
         ))
 
-    async def gen_response(self, prompts: Iterable[Union[str, Image]], chat: ChatSession | None = None, stream = False):
+    async def gen_response(self, prompts: Iterable[content_types.PartType], chat: ChatSession | None = None, stream = False):
         try:
             if chat:
                 response = await chat.send_message_async(content=prompts, stream=stream)
@@ -52,7 +54,7 @@ class GeminiService(object):
             # Handle the StopAsyncIteration exception, raised by async generators, here
             pass
 
-    def gen_response_stream(self, prompts: Union[Iterable[Union[str, Image]], str], chat: ChatSession | None = None):
+    def gen_response_stream(self, prompts: Union[Iterable[content_types.PartType], str], chat: ChatSession | None = None):
         return self.gen_response(prompts=prompts, chat=chat, stream=True)
 
     def create_chat_session(self, history: list[content_types.StrictContentType] = []):
