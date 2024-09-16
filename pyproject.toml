@@ -20,6 +20,7 @@ sentry-sdk = "^2.14.0"
 md2tgmd = {git = "https://github.com/yym68686/md2tgmd.git"}
 python-dotenv = "^1.0.1"
 g4f = {extras = ["image"], version = "^0.3.2.7"}
+curl_cffi = "^0.7.1"
 
 
 [build-system]
