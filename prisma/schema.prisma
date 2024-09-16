@@ -32,15 +32,31 @@ model Chat {
 }
 
 model Message {
-  objId         String   @id @default(auto()) @map("_id") @db.ObjectId
-  id            Int
-  parentMsgId   Int?
-  childMsgId    Int?
+  objId         String         @id @default(auto()) @map("_id") @db.ObjectId
+  uniqueId      String         @unique // Format "chatId:messageId"
+  messageId     Int
   text          String
   textEmbedding Float[]
-  user          User?    @relation(fields: [userId], references: [id])
-  userId        BigInt?
-  chat          Chat     @relation(fields: [chatId], references: [id])
+  chat          Chat           @relation(fields: [chatId], references: [id])
   chatId        BigInt
-  createdAt     DateTime @default(now())
+  user          User?          @relation(fields: [userId], references: [id])
+  userId        BigInt?
+  createdAt     DateTime       @default(now())
+  chatMessage   ChatMessage?
+  parentMessage ParentMessage?
+}
+
+model ChatMessage {
+  objId          String         @id @default(auto()) @map("_id") @db.ObjectId
+  uniqueId       String         @unique // Format "chatId:messageId"
+  message        Message        @relation(fields: [uniqueId], references: [uniqueId])
+  parentUniqueId String?
+  parent         ParentMessage? @relation(fields: [parentUniqueId], references: [uniqueId])
+}
+
+model ParentMessage {
+  objId    String        @id @default(auto()) @map("_id") @db.ObjectId
+  uniqueId String        @unique // Format "chatId:messageId"
+  message  Message       @relation(fields: [uniqueId], references: [uniqueId])
+  children ChatMessage[]
 }

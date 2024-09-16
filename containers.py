@@ -3,6 +3,7 @@ from bot.bot import TgBot
 
 from chat.memorizer import Memorizer
 from chat.prompt_generator import PromptGenerator
+from chat.services.cohere import CohereService
 from chat.services.db import DbService
 from chat.services.img_gen import ImgGenService
 from chat.query_processor import QueryProcessor
@@ -16,10 +17,11 @@ class Configs(containers.DeclarativeContainer):
 
 class BotContainer(containers.DeclarativeContainer):
     chat_service = providers.Singleton(GeminiService, api_key=Configs.chat_config.api_key)
+    cohere = providers.Singleton(CohereService, api_key=Configs.chat_config.cohere_api_key)
     voice_service = providers.Singleton(VoiceService, voice_api_url=Configs.chat_config.voice_api_url, tts_voice=Configs.chat_config.tts_voice, stt_engine=Configs.chat_config.stt_engine)
     img_service = providers.Singleton(ImgGenService, bing_cookie=Configs.chat_config.bing_cookie, google_cookie=Configs.chat_config.google_cookie)
     db_service = providers.Singleton(DbService, url=Configs.chat_config.mongo_db_url)
-    memorizer = providers.Singleton(Memorizer, db=db_service, gemini=chat_service)
+    memorizer = providers.Singleton(Memorizer, db=db_service, cohere=cohere)
     query_processor = providers.Singleton(QueryProcessor, gemini=chat_service, voice=voice_service, img_gen=img_service)
     prompt_generator = providers.Singleton(PromptGenerator, voice_service=voice_service, memorizer=memorizer)
     chat_repo = providers.Factory(ChatRepo, gemini=chat_service, processor=query_processor, generator=prompt_generator, db=db_service, memorizer=memorizer)

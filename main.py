@@ -72,6 +72,8 @@ def init_bot(app: Application):
     configs.chat_config.qdrant_api_key.from_env("QDRANT_API_KEY")
     # mongo db url
     configs.chat_config.mongo_db_url.from_env("MONGODB_URL")
+    # cohere api key
+    configs.chat_config.cohere_api_key.from_env("COHERE_API_KEY")
 
     BotContainer.tg_bot().register_webhook_handler(app, WEBHOOK_PATH)
 

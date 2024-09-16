@@ -5,6 +5,7 @@ from prisma.types import *
 import prisma.models
 from motor.motor_asyncio import AsyncIOMotorClient
 
+from common.models.embedded_message import EmbeddedMessage
 from common.models.scored_message import ScoredMessage
 
 class DbService:
@@ -83,21 +84,27 @@ class DbService:
             }
         )
     
-    async def insert_messages(self, chat_id: int, messages: list[tg.Message], embeddings: list[list[float]]):
+    async def insert_messages(self, chat_id: int, messages: list[EmbeddedMessage]):
         db = await self.db()
-        return await db.message.create_many(
-            data=[
-                MessageCreateWithoutRelationsInput(
-                    id=message.message_id,
-                    text=message.text if message.text else '',
-                    textEmbedding=embeddings[i] if len(embeddings) > i else [],
-                    userId=message.from_user.id if message.from_user else None,
+        batch = db.batch_()
+        for msg in messages:
+            batch.message.create(
+                data=MessageCreateInput(
+                    uniqueId=f'{chat_id}:{msg.message.message_id}',
+                    messageId=msg.message.message_id,
+                    parent=ParentMessageCreateNestedWithoutRelationsInput(
+                        create={ 'uniqueId': f'{chat_id}:{msg.parent_msg_id}' } if msg.parent_msg_id else None,
+                        connect={ 'uniqueId' : f'{chat_id}:{msg.parent_msg_id}' } if msg.parent_msg_id else None
+                    ),
+                    text=msg.message.text if msg.message.text else '',
+                    textEmbedding=msg.embedding,
+                    userId=msg.message.from_user.id if msg.message.from_user else None,
                     chatId=chat_id
-                ) for i, message in enumerate(messages)
-            ]
-        )
+                )
+            )
+        await batch.commit()
     
-    async def aggregate_messages(self, chat_id: int, query_vector: list[float]):
+    async def aggregate_messages(self, chat_id: int, query_vector: list[float], dimension: int = 1024):
         db = self.motor()
         res_list: list[ScoredMessage] = []
         for doc in await db.Message.aggregate([
@@ -106,7 +113,7 @@ class DbService:
                     "index": "vector_index",
                     "path": "textEmbedding",
                     "queryVector": query_vector,
-                    "numCandidates": 768,
+                    "numCandidates": dimension,
                     "limit": 10,
                     "filter": {
                         "chatId": {"$eq": chat_id}
