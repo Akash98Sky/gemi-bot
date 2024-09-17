@@ -1,9 +1,8 @@
 from logging import Logger, getLogger
 from typing import Iterable, Union
-from PIL.Image import Image
 import google.generativeai as genai
 from google.generativeai.generative_models import content_types, generation_types, ChatSession
-from chat.prompts.static import CHAT_INIT_HISTORY
+from chat.prompts.static import SYSTEM_INSTRUCTIONS
 
 logging: Logger = getLogger(__name__)
 
@@ -22,7 +21,12 @@ class GeminiService(object):
         )
         # for m in genai.list_models():
         #     pprint.pprint(m)
-        self.model = genai.GenerativeModel('gemini-1.5-flash-latest', safety_settings=safety_settings, generation_config=gen_config)
+        self.model = genai.GenerativeModel(
+            'gemini-1.5-flash-latest',
+            safety_settings=safety_settings,
+            generation_config=gen_config,
+            system_instruction=SYSTEM_INSTRUCTIONS
+        )
         
     def __to_user_content__(self, text: str):
         return content_types.strict_to_content(content_types.ContentDict(
@@ -58,6 +62,5 @@ class GeminiService(object):
         return self.gen_response(prompts=prompts, chat=chat, stream=True)
 
     def create_chat_session(self, history: list[content_types.StrictContentType] = []):
-        history.extend(CHAT_INIT_HISTORY)
         return self.model.start_chat(history=history)
 
