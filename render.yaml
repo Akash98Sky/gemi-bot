@@ -17,6 +17,8 @@ services:
         sync: false
       - key: GOOGLE_API_KEY
         sync: false
+      - key: TAVILY_API_KEY
+        sync: false
       - key: MSG_HANDLING_CONCURRENCY
         value: 10
       - key: INACTIVITY_SLEEP_DELAY
