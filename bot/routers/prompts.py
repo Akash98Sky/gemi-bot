@@ -31,6 +31,7 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[PartUnion
             sent = await message.reply(text=italic('Thinking...'))
 
         chat: Chat = await repo.get_chat_session(message.chat.id)
+        text_reply: Message | None = None
         
         response = ""
         error: TelegramBadRequest | None = None
@@ -51,16 +52,22 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[PartUnion
                         await sent.delete()
                         sent = None
                     await message.reply_voice(voice=reply.media)
-                elif isinstance(reply, str) and (sent is not None or text_sent is not None):
+                elif isinstance(reply, str):
                     response = response + reply
-                    text_sent = sent
                     error = None
-                    sent = None
                     # escape() converts Markdown to Telegram specific Markdown v2 format
                     response_md = escape(response)
-                    if text_sent and reply.strip() != '' and text_sent.md_text.strip() != response_md.strip():
-                        # Only update if there was a change
-                        await text_sent.edit_text(text=response_md)
+
+                    # Send the response back to the user
+                    if reply.strip() != '':
+                        text_reply = sent if sent else text_reply
+                        sent = None
+                        if text_reply and text_reply.md_text.strip() != response_md.strip():
+                            # Only update if there was a change
+                            await text_reply.edit_text(text=response_md)
+                        elif text_reply is None:
+                            # Send a new message if the previous one was deleted
+                            text_reply = await message.reply(text=response_md)
             except TelegramBadRequest as e:
                 error = e
                 # Ignore intermediate errors
