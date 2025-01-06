@@ -1,6 +1,6 @@
 from logging import Logger, getLogger
 from typing import AsyncGenerator, Union
-from aiogram.types import InputMediaPhoto, InputMediaAudio, URLInputFile, BufferedInputFile
+from aiogram.types import InputMediaPhoto, InputMediaAudio, URLInputFile
 from google.genai import chats, types
 import time
 
@@ -14,8 +14,8 @@ from chat.tools.search import DuckduckgoSearchFunctionCall, DuckduckgoSearchPara
 
 logging: Logger = getLogger(__name__)
 
-type ModelEventType = Union[str, GenerateImageFunctionCall, GenerateVoiceFunctionCall, DuckduckgoSearchFunctionCall, TavilySearchFunctionCall]
-type OutputEventType = Union[str, InputMediaPhoto, InputMediaAudio, list[InputMediaPhoto], DuckduckgoSearchResults, TavilySearchResults]
+ModelEventType = Union[str, GenerateImageFunctionCall, GenerateVoiceFunctionCall, DuckduckgoSearchFunctionCall, TavilySearchFunctionCall]
+OutputEventType = Union[str, InputMediaPhoto, InputMediaAudio, list[InputMediaPhoto], DuckduckgoSearchResults, TavilySearchResults]
 
 class QueryProcessor():
     __gemini: GeminiService
