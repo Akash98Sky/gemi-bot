@@ -5,7 +5,7 @@ services:
     region: singapore
     plan: free
     dockerfilePath: ./Dockerfile
-    dockerCommand: gunicorn main:web_app --bind 0.0.0.0:$PORT -k aiohttp.GunicornWebWorker
+    dockerCommand: poetry run gunicorn main:web_app --bind 0.0.0.0:$PORT -k aiohttp.GunicornWebWorker
     envVars:
       - key: ENV
         sync: false
