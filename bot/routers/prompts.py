@@ -8,6 +8,7 @@ from md2tgmd import escape
 
 from bot.middlewares.prompt_gen import PromptGenMiddleware
 from chat.repository import Chat, ChatRepo
+from utils.markdown import split_md
 
 logging: Logger = getLogger(__name__)
 
@@ -15,6 +16,28 @@ logging: Logger = getLogger(__name__)
 prompts_router = Router(name='message_router')
 
 prompts_router.message.middleware.register(PromptGenMiddleware())
+
+async def text_reply(reply_to: Message, text: str, replies: list[Message]) -> list[Message]:
+    if text.strip() != '':
+        # Split the response into chunks
+        chunks = split_md(text)
+
+        for i, chunk in enumerate(chunks):
+            # escape() converts Markdown to Telegram specific Markdown v2 format
+            chunk = escape(chunk)
+
+            text_reply = replies[i] if i < len(replies) else None
+
+            if text_reply and text_reply.md_text.strip() != chunk.strip():
+                # Update the reply chunks if there are changes
+                await text_reply.edit_text(text=chunk)
+            else:
+                prev_msg = replies[i - 1] if i > 0 else reply_to
+                # Send the chunk as a new reply
+                text_reply = await prev_msg.reply(text=chunk)
+                replies.append(text_reply)
+
+    return replies
 
 @prompts_router.message()
 async def echo_handler(message: Message, repo: ChatRepo, prompts: list[PartUnionDict] = [], sent: Message | None = None) -> None:
@@ -31,7 +54,7 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[PartUnion
             sent = await message.reply(text=italic('Thinking...'))
 
         chat: Chat = await repo.get_chat_session(message.chat.id)
-        text_reply: Message | None = None
+        text_replies = []
         
         response = ""
         error: TelegramBadRequest | None = None
@@ -55,19 +78,11 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[PartUnion
                 elif isinstance(reply, str):
                     response = response + reply
                     error = None
-                    # escape() converts Markdown to Telegram specific Markdown v2 format
-                    response_md = escape(response)
-
-                    # Send the response back to the user
-                    if reply.strip() != '':
-                        text_reply = sent if sent else text_reply
+                    if sent:
+                        text_replies.append(sent)
                         sent = None
-                        if text_reply and text_reply.md_text.strip() != response_md.strip():
-                            # Only update if there was a change
-                            await text_reply.edit_text(text=response_md)
-                        elif text_reply is None:
-                            # Send a new message if the previous one was deleted
-                            text_reply = await message.reply(text=response_md)
+                    
+                    text_replies = await text_reply(message, response, text_replies)
             except TelegramBadRequest as e:
                 error = e
                 # Ignore intermediate errors
