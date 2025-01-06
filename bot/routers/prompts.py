@@ -1,14 +1,13 @@
 from logging import Logger, getLogger
-from PIL.Image import Image
-from typing import Union
 from aiogram import Router
-from aiogram.types import Message, InputMediaAudio
+from aiogram.types import Message, InputMediaAudio, InputMediaPhoto
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.utils.markdown import italic, pre
+from google.genai.types import PartUnionDict
+from md2tgmd import escape
 
 from bot.middlewares.prompt_gen import PromptGenMiddleware
 from chat.repository import Chat, ChatRepo
-from md2tgmd import escape
 
 logging: Logger = getLogger(__name__)
 
@@ -18,7 +17,7 @@ prompts_router = Router(name='message_router')
 prompts_router.message.middleware.register(PromptGenMiddleware())
 
 @prompts_router.message()
-async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str, Image]] = [], sent: Message | None = None) -> None:
+async def echo_handler(message: Message, repo: ChatRepo, prompts: list[PartUnionDict] = [], sent: Message | None = None) -> None:
     """
     Handler will forward receive a message back to the sender
 
@@ -41,20 +40,27 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
                     if sent:
                         await sent.delete()
                         sent = None
-                    await message.reply_media_group(media=reply)
+                    await message.reply_media_group(media=list(reply))
+                if isinstance(reply, InputMediaPhoto):
+                    if sent:
+                        await sent.delete()
+                        sent = None
+                    await message.reply_photo(photo=reply.media)
                 elif isinstance(reply, InputMediaAudio):
                     if sent:
                         await sent.delete()
                         sent = None
                     await message.reply_voice(voice=reply.media)
-                elif sent:
+                elif isinstance(reply, str) and (sent is not None or text_sent is not None):
                     response = response + reply
+                    text_sent = sent
                     error = None
+                    sent = None
                     # escape() converts Markdown to Telegram specific Markdown v2 format
                     response_md = escape(response)
-                    if sent.md_text.strip() != response_md.strip():
+                    if text_sent and reply.strip() != '' and text_sent.md_text.strip() != response_md.strip():
                         # Only update if there was a change
-                        sent = await sent.edit_text(text=response_md)
+                        await text_sent.edit_text(text=response_md)
             except TelegramBadRequest as e:
                 error = e
                 # Ignore intermediate errors
@@ -66,7 +72,7 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
             raise error
     except TelegramBadRequest as e:
         # Ignore intermediate errors
-        logging.warn(f'Failed to reply message: {message.text}, TelegramBadRequest: {e}')
+        logging.warning(f'Failed to reply message: {message.text}, TelegramBadRequest: {e}')
         if sent != None:
             await sent.edit_text(text=italic('Failed to reply, try again...'))
         else:
@@ -75,7 +81,7 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[Union[str
         # But not all the types is supported to be copied so need to handle it
         logging.error(f'Failed to reply message: {message.text}, Exception: {e}', exc_info=True)
         if sent != None:
-            await sent.edit_text(text=f'Oops\! Failed\.\.\.\n\n' + pre(f'{(type(e).__name__)}: {e}'))
+            await sent.edit_text(text=escape('Oops! Failed...\n\n') + pre(f'{(type(e).__name__)}: {e}'))
         else:
-            await message.reply(text=f'Oops\! Failed\.\.\.\n\n' + pre(f'{(type(e).__name__)}: {e}'))
-    
+            await message.reply(text=escape('Oops! Failed...\n\n') + pre(f'{(type(e).__name__)}: {e}'))
+

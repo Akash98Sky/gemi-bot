@@ -5,8 +5,8 @@ Gemi is a Telegram chat bot that leverages the `gemini-pro` API for text-based m
 ## Features
 
 - Text conversation with users using the `gemini-pro` generative model.
-- Image generation based on prompts using Bing.
-- Search query handling with informative responses.
+- Image generation based on prompts using [pollinations.ai](https://pollinations.ai/).
+- Realtime search using [Tavily](https://tavily.com/).
 - PDF and document understanding capabilities.
 - Built-in logging and error tracking via Sentry.
 - Extendable with middleware and custom route handlers.
@@ -29,7 +29,7 @@ To get started with Gemi chat bot, follow these steps:
 - Python 3.10+
 - A Telegram bot token from [BotFather](https://t.me/BotFather)
 - API keys for `gemini-pro` from [here](https://makersuite.google.com/app/apikey)
-- Auth cookies of `Bing AI` from [here](https://github.com/Integration-Automation/ReEdgeGPT?tab=readme-ov-file#getting-authentication), used for image generation (optional)
+- A Tavily API key from [here](https://tavily.com/)
 - A configured webhook host. For localhost, follow [this](#webhook-on-localhost). (optional)
 
 ### Installation
@@ -53,7 +53,7 @@ Create a .env file at the root of the project directory with the following envir
 ```
 BOT_TOKEN=<your_telegram_bot_token>
 GOOGLE_API_KEY=<your_gemini_pro_api_key>
-BING_COOKIE=<your_bing_auth_cookie>
+TAVILY_API_KEY=<your_tavily_api_key>
 
 # Webhook settings to wake up the bot (optional) - required only if your service spins down while idle (e.g.: Heroku, Render)
 APP_HOSTNAME=<your_webhook_host> (e.g.: abc.xyz.com)

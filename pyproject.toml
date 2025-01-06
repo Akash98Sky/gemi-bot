@@ -9,18 +9,17 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
-aiogram = "^3.13.0"
-dependency-injector = "^4.42.0"
-google-generativeai = "^0.8.1"
+aiogram = "^3.16.0"
+dependency-injector = "^4.44.0"
+google-genai = "^0.3.0"
 gunicorn = "^23.0.0"
-pillow = "^10.4.0"
+pillow = "^11.1.0"
 pypdfium2 = "^4.30.0"
-duckduckgo-search = "^6.2.11"
-sentry-sdk = "^2.14.0"
+sentry-sdk = "^2.19.2"
 md2tgmd = {git = "https://github.com/yym68686/md2tgmd.git"}
+pollinations = "^2.3.4"
 python-dotenv = "^1.0.1"
-g4f = {extras = ["image"], version = "^0.3.2.7"}
-curl_cffi = "^0.7.1"
+tavily-python = "^0.5.0"
 
 
 [build-system]

@@ -56,10 +56,8 @@ def init_bot(app: Application):
 
     # API key can be obtained via https://platform.openai.com/account/api-keys
     configs.chat_config.api_key.from_env("GOOGLE_API_KEY", required=True)
-    # Bing cookie for using Bing image search
-    configs.chat_config.bing_cookie.from_env("BING_COOKIE")
-    # Google cookie for using Google image search
-    configs.chat_config.google_cookie.from_env("GOOGLE_COOKIE")
+    # Tavily API key for live data search
+    configs.chat_config.tavily_api_key.from_env("TAVILY_API_KEY", required=True)
     # Voice API URL
     configs.chat_config.voice_api_url.from_env("VOICE_API_URL")
     # Voice engine
