@@ -1,32 +1,33 @@
 import asyncio
 from typing import Iterable, Union
-from google.generativeai.generative_models import content_types, ChatSession
+from google.genai.chats import AsyncChat
+from google.genai.types import Content, PartUnionDict
 
 from chat.services.gemini import GeminiService
 from chat.query_processor import QueryProcessor
 
 class Chat():
     __id: int
-    __session: ChatSession
+    __session: AsyncChat
     __processor: QueryProcessor
-    __chat_init_history: list[content_types.protos.Content]
+    __chat_init_history: list[Content]
     __sem = asyncio.BoundedSemaphore(1)
 
-    def __init__(self, id: int, session: ChatSession, processor: QueryProcessor):
+    def __init__(self, id: int, session: AsyncChat, processor: QueryProcessor):
         self.__id = id
         self.__session = session
         self.__processor = processor
-        self.__chat_init_history = session.history
+        self.__chat_init_history = session._curated_history
 
-    async def send_message_async(self, messages: Union[Iterable[content_types.PartType], str]):
+    async def send_message_async(self, messages: list[PartUnionDict]):
         async with self.__sem:
             # generate new response only if earlier responses are complete
             async for reply in self.__processor.process_response(session=self.__session, messages=messages, chat_id=self.__id):
                 yield reply
     
     async def reset(self):
-        self.__session.history.clear()
-        self.__session.history.extend(self.__chat_init_history)
+        self.__session._curated_history.clear()
+        self.__session._curated_history.extend(self.__chat_init_history)
 
 class ChatRepo():
     __gemini: GeminiService

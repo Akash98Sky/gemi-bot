@@ -58,7 +58,6 @@ class TgBot(object):
             bot=self.bot,
             secret_token=self.secret,
             repo=self.chat_repo,
-            voice_service=self.voice_service,
             handle_in_background=False
         )
         # Register webhook handler on application

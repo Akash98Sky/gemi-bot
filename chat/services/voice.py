@@ -1,16 +1,23 @@
 import asyncio
 from contextlib import suppress
+from google.genai.types import Blob
 import signal
-from aiohttp import ClientSession, FormData, JsonPayload
+from aiohttp import ClientSession, JsonPayload
 from logging import getLogger
+
+from pydantic import BaseModel
 
 from common.types.exceptions import FeatureNotEnabledException
 
 logging = getLogger(__name__)
 
+class VoiceResponse(BaseModel):
+    url: str
+    blob: Blob
+
 class VoiceService:
     __engine_busy_sem = asyncio.BoundedSemaphore(1)
-    __client_session: ClientSession | None = None
+    __client_session: ClientSession
     __tts: str
     __stt: str
     __voice: str
@@ -55,7 +62,6 @@ class VoiceService:
             self.__engine_up_task.cancel()
         if self.__client_session:
             asyncio.create_task(self.__client_session.close())
-            self.__client_session = None
         logging.info("Voice engine is closed...")
 
     async def text_to_wave(self, text: str):
@@ -68,23 +74,18 @@ class VoiceService:
 
         data = JsonPayload({'text': text, 'voice_id': self.__voice})
         async with self.__client_session.post(f'/api/speak/{self.__tts}', data=data) as response:
-            if response.status == 200:
-                res = await response.json()
-                return str(res['url'])
-            logging.error(f"Voice engine returned error status: {response.status}")
-
-    async def voice_to_text(self, voice: bytes, content_type: str = 'audio/wav'):
-        if not self.__client_session:
-            raise FeatureNotEnabledException("Voice engine is not enabled.")
+            if response.status != 200:
+                raise Exception(f"Voice engine returned error status: {response.status}")
+            
+            res = await response.json()
+            url = str(res['url'])
         
-        async with self.__engine_busy_sem:
-            # Wait until engine is up
-            pass
+        relative_url = url.removeprefix(self.__voice_api_url).replace('onetime/', '')
+        async with self.__client_session.get(relative_url) as response:
+            if response.status != 200:
+                raise Exception(f"Voice engine returned error status: {response.status}")
 
-        data = FormData()
-        data.add_field('file', voice, content_type=content_type)
-        async with self.__client_session.post(f'/api/listen/{self.__stt}', data=data) as response:
-            if response.status == 200:
-                res = await response.json()
-                return str(res['text'])
-            logging.error(f"Voice engine returned error status: {response.status}")
+            return VoiceResponse(
+                url=url,
+                blob=Blob(mime_type=response.content_type, data=await response.content.read())
+            )
