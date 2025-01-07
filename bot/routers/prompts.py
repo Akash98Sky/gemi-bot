@@ -77,12 +77,14 @@ async def echo_handler(message: Message, repo: ChatRepo, prompts: list[PartUnion
                     await message.reply_voice(voice=reply.media)
                 elif isinstance(reply, str):
                     response = response + reply
-                    error = None
-                    if sent:
-                        text_replies.append(sent)
-                        sent = None
                     
-                    text_replies = await text_reply(message, response, text_replies)
+                    if reply.strip() != '':
+                        error = None
+                        if sent:
+                            text_replies.append(sent)
+                            sent = None
+                        
+                        text_replies = await text_reply(message, response, text_replies)
             except TelegramBadRequest as e:
                 error = e
                 # Ignore intermediate errors
