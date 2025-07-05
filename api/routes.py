@@ -1,4 +1,3 @@
-from typing import Any, Dict
 from aiohttp.web import RouteTableDef, Request, json_response
 
 from containers import BotContainer
@@ -10,7 +9,10 @@ async def root(request: Request):
     q = request.query.get('q', None)
     if q is None or q.isspace():
         return json_response({ "message": "Hello World" })
-    res = ''.join([r async for r in BotContainer.chat_service().gen_response(q)])
+    res = ''.join([str(r) async for r in BotContainer.chat_service().gen_response_stream(
+        [{ "text": q }],
+        chat=BotContainer.chat_service().create_chat_session())
+    ])
     return json_response({"message": q, "reply": res})
 
 @routes.get("/ping")

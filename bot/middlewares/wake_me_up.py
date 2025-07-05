@@ -14,7 +14,7 @@ logging: Logger = getLogger(__name__)
 MSG_HANDLING_CONCURRENCY = int(getenv('MSG_HANDLING_CONCURRENCY', '20'))
 INACTIVITY_SLEEP_DELAY = int(getenv('INACTIVITY_SLEEP_DELAY', '-1'))
 
-class HackyMiddleware(BaseMiddleware):
+class WakeMeUpMiddleware(BaseMiddleware):
     """A cool hacky way to keep instance active using webhooks but using polling for message handling.
         
         As it is not possible to use webhooks with polling and webhooks gives incosistent results.
@@ -27,7 +27,7 @@ class HackyMiddleware(BaseMiddleware):
     sleep_enabled = False
 
     def __init__(self, tg_bot: Any):
-        super(HackyMiddleware, self).__init__()
+        super(WakeMeUpMiddleware, self).__init__()
         self.bot = tg_bot
         self.sleep_enabled = INACTIVITY_SLEEP_DELAY > 0
         if self.sleep_enabled:
@@ -42,7 +42,7 @@ class HackyMiddleware(BaseMiddleware):
             try:
                 async with self.timer_create_sem:
                     # timer is scheduled here
-                    self.timer = Timer(delay, callback=HackyMiddleware.goto_sleep, callback_args=[self])
+                    self.timer = Timer(delay, callback=WakeMeUpMiddleware.goto_sleep, callback_args=[self])
 
                 # wait until the callback has been executed
                 await self.timer.wait()
@@ -93,17 +93,17 @@ class HackyMiddleware(BaseMiddleware):
     ) -> Any:
         try:
             # acquire lock to hold the sleep timer
-            if self.sleep_enabled and self.bot_activity_sem._bound_value == self.bot_activity_sem._value:
+            if self.sleep_enabled and self.bot_activity_sem._value == MSG_HANDLING_CONCURRENCY:
                 await self.timer_create_sem.acquire()
                 self.cancel_sleep_timer()
 
             async with self.bot_activity_sem:
                 if not self.__awake():
-                    asyncio.create_task(self.wake_up())
+                    await self.wake_up()
                     return Response(status=400, text='Bot is asleep')
                 else:
                     return await handler(event, data)
         finally:
             # release lock if there is no more activity
-            if self.sleep_enabled and self.bot_activity_sem._bound_value == self.bot_activity_sem._value:
+            if self.sleep_enabled and self.bot_activity_sem._value == MSG_HANDLING_CONCURRENCY:
                 self.timer_create_sem.release()

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import platform
 import sys
 from aiohttp.web import Application, run_app
@@ -50,7 +51,15 @@ def init_bot(app: Application):
     # Bot token can be obtained via https://t.me/BotFather
     configs.bot_config.token.from_env("BOT_TOKEN", required=True)
     # Base URL for webhook will be used to generate webhook URL for Telegram
-    configs.bot_config.webhook_host.from_env("APP_HOSTNAME")
+    if os.getenv("RENDER_EXTERNAL_HOSTNAME"):
+        # If running on Render, use the external hostname
+        configs.bot_config.webhook_host.from_env("RENDER_EXTERNAL_HOSTNAME")
+    else:
+        # Otherwise, use the APP_HOSTNAME environment variable
+        # This should be set to your server's public hostname
+        # e.g. "example.com" or "api.example.com"
+        # Make sure to set this in your environment variables
+        configs.bot_config.webhook_host.from_env("APP_HOSTNAME")
     # Secret key to validate requests from Telegram (optional)
     configs.bot_config.webhook_secret.from_env("WEBHOOK_SECRET", default='')
 
@@ -65,9 +74,6 @@ def init_bot(app: Application):
     configs.chat_config.tts_voice.from_env("TTS_VOICE", default="Gail-PlayAI")
 
     BotContainer.tg_bot().register_webhook_handler(app, WEBHOOK_PATH)
-
-    # This will start the voice engine and bring it up
-    BotContainer.voice_service()
 
 async def web_app():
     if path.exists(".env"):

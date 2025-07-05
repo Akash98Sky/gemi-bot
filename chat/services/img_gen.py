@@ -52,7 +52,7 @@ class ImgGenService():
         for _ in range(quantity):
             image_requests.append(
                 self.__req_image__(pollinations.Async.Image.Request(
-                    model=pollinations.Image.flux_pro(),
+                    model='flux-pro',
                     prompt=prompt,
                     seed="random",
                     width=width,

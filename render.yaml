@@ -17,8 +17,6 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
-      - key: APP_HOSTNAME
-        sync: false
       - key: WEBHOOK_SECRET
         value: "s3cr3t_9f8d2b1a"
       - key: MSG_HANDLING_CONCURRENCY

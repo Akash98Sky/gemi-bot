@@ -4,9 +4,10 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp.web import Application
+from httpx import URL
 
 from bot.routers import commands, prompts
-from bot.middlewares.hack import HackyMiddleware
+from bot.middlewares.wake_me_up import WakeMeUpMiddleware
 from common.types.enums import BotEventMethods
 from chat.repository import ChatRepo
 from chat.services.voice import VoiceService
@@ -28,8 +29,8 @@ class TgBot(object):
         prompts.prompts_router
     ]
 
-    def __something_hacky__(self):
-        hacky = HackyMiddleware(self)
+    def __setup_wake_me_up__(self):
+        hacky = WakeMeUpMiddleware(self)
         self.dispatcher.message.middleware.register(hacky)
         self.dispatcher.startup.register(hacky.startup)
         self.dispatcher.shutdown.register(hacky.shutdown)
@@ -43,12 +44,8 @@ class TgBot(object):
         self.webhook_host = webhook_host
         self.secret = webhook_secret
         self.method = BotEventMethods.unknown
-        self.__something_hacky__()
+        self.__setup_wake_me_up__()
 
-    def start_polling(self):
-        self.method = BotEventMethods.polling
-        return self.dispatcher.start_polling(self.bot, handle_signals=False, repo=self.chat_repo, voice_service=self.voice_service)
-    
     def register_webhook_handler(self, app: Application, path: str):
         # Create an instance of request handler,
         # aiogram has few implementations for different cases of usage
@@ -69,19 +66,18 @@ class TgBot(object):
         self.webhook_path = path
 
     async def set_webhook(self, drop_pending_updates = False):
-        webhook_url = f'https://{self.webhook_host}{self.webhook_path}'
+        if not self.webhook_host or self.webhook_host.strip() == '':
+            # No webhook url set
+            logging.warning('env APP_HOSTNAME is not set...')
+            return False
+        
+        webhook_url = URL(f'https://{self.webhook_host}').join(self.webhook_path)
         logging.debug(f'Bot webhook set to {webhook_url}...')
         webhook_info = await self.bot.get_webhook_info()
         self.method = BotEventMethods.webhook
 
-        if webhook_info.url != webhook_url or drop_pending_updates:    
-            if not self.webhook_host or self.webhook_host.strip() == '':
-                # No webhook url set
-                logging.warning('env APP_HOSTNAME is not set...')
-                return False
-            # Drop pending updates so that it does not keep retrying
-            # No need to wait longer than 20 secsonds
-            return await self.bot.set_webhook(url=webhook_url, secret_token=self.secret, drop_pending_updates=drop_pending_updates)
+        if webhook_info.url != webhook_url or drop_pending_updates:
+            return await self.bot.set_webhook(url=str(webhook_url), secret_token=self.secret, drop_pending_updates=drop_pending_updates)
         return True
 
     def delete_webhook(self, drop_pending_updates = False):
@@ -89,9 +85,10 @@ class TgBot(object):
         self.method = BotEventMethods.unknown
         return self.bot.delete_webhook(drop_pending_updates=drop_pending_updates)
     
+    def start_polling(self):
+        self.method = BotEventMethods.polling
+        return self.dispatcher.start_polling(self.bot, handle_signals=False, repo=self.chat_repo, voice_service=self.voice_service)
+    
     def stop_polling(self):
         self.method = BotEventMethods.unknown
         return self.dispatcher.stop_polling()
-    
-    def close(self):
-        return self.bot.close()
