@@ -6,6 +6,7 @@ Gemi is a Telegram chat bot that leverages the `gemini-pro` API for text-based m
 
 - Text conversation with users using the `gemini-pro` generative model.
 - Image generation based on prompts using [pollinations.ai](https://pollinations.ai/).
+- Voice generation using [Groq](https://console.groq.com/docs/text-to-speech)'s TTS
 - Realtime search using [Tavily](https://tavily.com/).
 - PDF and document understanding capabilities.
 - Built-in logging and error tracking via Sentry.
@@ -26,10 +27,11 @@ To get started with Gemi chat bot, follow these steps:
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - A Telegram bot token from [BotFather](https://t.me/BotFather)
 - API keys for `gemini-pro` from [here](https://makersuite.google.com/app/apikey)
 - A Tavily API key from [here](https://tavily.com/)
+- A Groq API key from [here](https://console.groq.com/keys)
 - A configured webhook host. For localhost, follow [this](#webhook-on-localhost). (optional)
 
 ### Installation
@@ -41,28 +43,37 @@ git clone https://github.com/Akash98Sky/gemi-chat-bot.git
 cd gemi-chat-bot
 ```
 
-2. Install the required dependencies:
+2. Create a virtual environment
 
 ```bash
-pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+3. Install the required dependencies using poetry:
+
+```bash
+pip install poetry
+poetry install
 ```
 
 ### Configuration
 
 Create a .env file at the root of the project directory with the following environment variables:
 ```
+# API Keys
 BOT_TOKEN=<your_telegram_bot_token>
-GOOGLE_API_KEY=<your_gemini_pro_api_key>
+GOOGLE_API_KEY=<your_google_api_key>
 TAVILY_API_KEY=<your_tavily_api_key>
+GROQ_API_KEY=<your_groq_api_key>
+
+# Voice settings (Check: https://console.groq.com/docs/text-to-speech/#parameters)
+TTS_MODEL=playai-tts
+TTS_VOICE=Gail-PlayAI
 
 # Webhook settings to wake up the bot (optional) - required only if your service spins down while idle (e.g.: Heroku, Render)
 APP_HOSTNAME=<your_webhook_host> (e.g.: abc.xyz.com)
-WEBHOOK_SECRET=<your_webhook_secret>
-
-# Voice API settings
-VOICE_API_URL=<your_voice_api_url>
-TTS_VOICE=festival:cmu_us_slt_arctic_hts
-STT_ENGINE=vosk
+WEBHOOK_SECRET=<your_webhook_secret> (optional, can be any string)
 ```
 
 ### Running the bot
