@@ -8,29 +8,21 @@ services:
     dockerCommand: poetry run gunicorn main:web_app --bind 0.0.0.0:$PORT -k aiohttp.GunicornWebWorker
     envVars:
       - key: ENV
-        sync: false
-      - key: APP_HOSTNAME
-        sync: false
+        value: production
       - key: BOT_TOKEN
-        sync: false
-      - key: WEBHOOK_SECRET
         sync: false
       - key: GOOGLE_API_KEY
         sync: false
       - key: TAVILY_API_KEY
         sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: APP_HOSTNAME
+        sync: false
+      - key: WEBHOOK_SECRET
+        value: "s3cr3t_9f8d2b1a"
       - key: MSG_HANDLING_CONCURRENCY
         value: 10
       - key: INACTIVITY_SLEEP_DELAY
         value: 30
-    healthCheckPath: /ping
-
-  - type: web
-    name: gemi-voice
-    runtime: docker
-    region: singapore
-    plan: free
-    repo: https://github.com/Akash98Sky/gemi-voice.git
-    dockerfilePath: ./Dockerfile
-    dockerCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /ping

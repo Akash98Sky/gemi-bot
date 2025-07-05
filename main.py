@@ -58,12 +58,11 @@ def init_bot(app: Application):
     configs.chat_config.api_key.from_env("GOOGLE_API_KEY", required=True)
     # Tavily API key for live data search
     configs.chat_config.tavily_api_key.from_env("TAVILY_API_KEY", required=True)
-    # Voice API URL
-    configs.chat_config.voice_api_url.from_env("VOICE_API_URL")
-    # Voice engine
-    configs.chat_config.tts_voice.from_env("TTS_VOICE", default="flite:cmu_us_slt")
-    # Speech to text engine
-    configs.chat_config.stt_engine.from_env("STT_ENGINE", default="vosk")
+    # Groq API key for voice generation
+    configs.chat_config.groq_api_key.from_env("GROQ_API_KEY", required=True)
+    # TTS model and voice to use
+    configs.chat_config.tts_model.from_env("TTS_MODEL", default="playai-tts")
+    configs.chat_config.tts_voice.from_env("TTS_VOICE", default="Gail-PlayAI")
 
     BotContainer.tg_bot().register_webhook_handler(app, WEBHOOK_PATH)
 

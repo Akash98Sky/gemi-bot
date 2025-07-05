@@ -14,17 +14,17 @@ class GenerateImageFunctionCall(FunctionCall):
 
 class GenerateImageFunctionDeclaration(FunctionDeclaration):
     name: str = "generate_image"
-    description: str = "Generate image from the given prompt parameter"
+    description: str = "Generates image from the given prompt parameter"
     parameters: Schema = Schema(
         type="OBJECT",
         properties={
             "prompt": Schema(
                 type="STRING",
-                description="A detailed prompt to generate the image",
+                description="A very detailed explanation about the scenario, surrounding and subject of the image",
             ),
             "image_name": Schema(
                 type="STRING",
-                description="A short file name for the image",
+                description="Auto generated short file name for the image",
             ),
             "quality": Schema(
                 type="STRING",

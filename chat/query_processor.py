@@ -1,21 +1,22 @@
 from logging import Logger, getLogger
 from typing import AsyncGenerator, Union
-from aiogram.types import InputMediaPhoto, InputMediaAudio, URLInputFile
+from aiogram.types import InputMediaPhoto, InputMediaAudio, URLInputFile, BufferedInputFile
 from google.genai import chats, types
+from pydantic import BaseModel
 import time
 
 from chat.services.gemini import GeminiService
 from chat.services.tavily import TavilyService
 from chat.services.voice import VoiceService
 from chat.services.img_gen import ImgGenService
-from common.constants.keywords import IMAGE_QUERY, SEARCH_QUERIES, VOICE_RESPONSE
 from chat.tools.generation import GenerateImageFunctionCall, GenerateImageParams, GenerateVoiceFunctionCall, GenerateVoiceParams
-from chat.tools.search import DuckduckgoSearchFunctionCall, DuckduckgoSearchParams, DuckduckgoSearchResults, TavilySearchFunctionCall, TavilySearchParams,TavilySearchResults
+from chat.tools.search import DuckduckgoSearchFunctionCall, TavilySearchFunctionCall, TavilySearchParams, TavilySearchResults
+from common.constants.keywords import IMAGE_QUERY, SEARCH_QUERIES, VOICE_RESPONSE
 
 logging: Logger = getLogger(__name__)
 
 ModelEventType = Union[str, GenerateImageFunctionCall, GenerateVoiceFunctionCall, DuckduckgoSearchFunctionCall, TavilySearchFunctionCall]
-OutputEventType = Union[str, InputMediaPhoto, InputMediaAudio, list[InputMediaPhoto], DuckduckgoSearchResults, TavilySearchResults]
+OutputEventType = Union[str, InputMediaPhoto, InputMediaAudio, list[InputMediaPhoto]]
 
 class QueryProcessor():
     __gemini: GeminiService
@@ -55,12 +56,12 @@ class QueryProcessor():
         file_name = f"voice_{chat_id}_{int(time.time())}.wav"
         voice_response = await self.__voice.text_to_wave(args.text)
 
-        return (InputMediaAudio(media=URLInputFile(voice_response.url, filename=file_name)), voice_response.blob)
+        return (InputMediaAudio(media=BufferedInputFile(voice_response.data, filename=file_name)), voice_response.blob)
 
     def __build_func_response(
         self,
         func_call: Union[DuckduckgoSearchFunctionCall, TavilySearchFunctionCall],
-        result: Union[DuckduckgoSearchResults, TavilySearchResults]
+        result: BaseModel
     ):
         return types.FunctionResponse(name=func_call.name, id=func_call.id, response=result.model_dump())
     

@@ -13,7 +13,7 @@ class Configs(containers.DeclarativeContainer):
 
 class BotContainer(containers.DeclarativeContainer):
     chat_service = providers.Singleton(GeminiService, api_key=Configs.chat_config.api_key)
-    voice_service = providers.Singleton(VoiceService, voice_api_url=Configs.chat_config.voice_api_url, tts_voice=Configs.chat_config.tts_voice, stt_engine=Configs.chat_config.stt_engine)
+    voice_service = providers.Singleton(VoiceService, groq_api_key=Configs.chat_config.groq_api_key, tts_model=Configs.chat_config.tts_model, tts_voice=Configs.chat_config.tts_voice)
     img_service = providers.Singleton(ImgGenService)
     tavily_service = providers.Singleton(TavilyService, api_key=Configs.chat_config.tavily_api_key)
     query_processor = providers.Singleton(QueryProcessor, gemini=chat_service, voice=voice_service, img_gen=img_service, tavily=tavily_service)
